@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@cowprotocol/cow-sdk": "^5.2.0",
+    "axios": "^1.6.8",
+    "ethers": "v5",
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.12.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
