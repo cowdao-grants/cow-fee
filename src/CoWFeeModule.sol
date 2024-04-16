@@ -78,6 +78,7 @@ contract CoWFeeModule {
     address immutable toToken;
     address immutable keeper;
     bytes32 immutable domainSeparator;
+    bytes32 immutable appData;
 
     struct Revocation {
         address token;
@@ -89,11 +90,12 @@ contract CoWFeeModule {
         uint256 sellAmount;
     }
 
-    constructor(address _receiver, address _toToken, address _keeper) {
+    constructor(address _receiver, address _toToken, address _keeper, bytes32 _appData) {
         receiver = ISafe(_receiver);
         toToken = _toToken;
         keeper = _keeper;
         domainSeparator = settlement.domainSeparator();
+        appData = _appData;
     }
 
     function approve(address[] calldata _tokens) external onlyKeeper {
@@ -145,7 +147,7 @@ contract CoWFeeModule {
             sellAmount: 0,
             buyAmount: 1,
             validTo: nextValidTo(),
-            appData: "CoWFeeModule",
+            appData: appData,
             feeAmount: 0,
             kind: SELL_KIND_HASH,
             partiallyFillable: true,
@@ -174,7 +176,7 @@ contract CoWFeeModule {
     }
 
     function nextValidTo() public view returns (uint32) {
-        return uint32(block.timestamp + 365 days) % 365 days;
+        return 365 days * (uint32(block.timestamp + 365 days) / 365 days);
     }
 
     function _execFromModule(address _to, bytes memory _cd) internal returns (bytes memory) {

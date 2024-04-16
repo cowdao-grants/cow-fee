@@ -33,7 +33,7 @@ contract CoWFeeModuleTest is Test {
     address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     function setUp() external {
-        module = new CoWFeeModule(targetSafe, WETH, keeper);
+        module = new CoWFeeModule(targetSafe, WETH, keeper, bytes32(0));
         mockToken = new MockERC20();
 
         vm.label(address(settlement), "settlement");

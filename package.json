@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@cowprotocol/app-data": "^2.1.0",
     "@cowprotocol/cow-sdk": "^5.2.0",
     "axios": "^1.6.8",
     "ethers": "v5",

@@ -11,8 +11,9 @@ import {
   SigningScheme,
   SupportedChainId,
 } from '@cowprotocol/cow-sdk';
-import { readFileSync } from 'fs';
+// import { readFileSync } from 'fs';
 import { formatUnits, parseEther } from 'ethers/lib/utils';
+import { MetadataApi } from '@cowprotocol/app-data';
 
 const multicall3Abi = [
   {
@@ -121,11 +122,13 @@ const moduleAbi = [
 
 const networkSpecificConfigs = {
   mainnet: {
-    module: '',
+    // NOTE: replace with deployed address
+    module: '0x90E75f390332356426B60FB440DF23f860F6A113',
     rpcUrl: 'https://eth.llamarpc.com',
     gpv2Settlement: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
     vaultRelayer: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110',
     buyToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+    receiver: '0x423cEc87f19F0778f549846e0801ee267a917935',
   },
 };
 
@@ -141,6 +144,7 @@ interface IConfig {
   network: keyof typeof networkSpecificConfigs;
   buyToken: string;
   minEthOut: number;
+  receiver: string;
 }
 
 interface IEthplorerResponse {
@@ -174,11 +178,18 @@ const readConfig = (): IConfig => {
   if (!Object.keys(networkSpecificConfigs).includes(network)) {
     throw new Error(`Invalid network ${network}`);
   }
-  const { rpcUrl, module, gpv2Settlement, vaultRelayer, buyToken } =
-    networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
+  const {
+    rpcUrl: defaultRpcUrl,
+    module,
+    gpv2Settlement,
+    vaultRelayer,
+    buyToken,
+    receiver,
+  } = networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const maxOrders = +args.maxOrders || 250;
   const minValue = +args.minValue || 1000;
   const minEthOut = +args.minEthOut || 0.02;
+  const rpcUrl = args['rpc-url'] || defaultRpcUrl;
 
   return {
     privateKey,
@@ -192,6 +203,7 @@ const readConfig = (): IConfig => {
     network,
     buyToken,
     minEthOut,
+    receiver,
   };
 };
 
@@ -333,6 +345,7 @@ const swapTokens = async (
     signerWithProvider
   );
   const nextValidTo = await moduleContract.nextValidTo();
+  const { appDataHex, appDataContent } = await getAppData();
 
   const orders = await Promise.allSettled(
     toSwap.map((token) =>
@@ -342,20 +355,30 @@ const swapTokens = async (
         sellAmount: token.balance.toString(),
         buyAmount: '1',
         validTo: nextValidTo,
-        appData: 'CoWFeeModule',
+        appData: appDataContent,
+        appDataHash: appDataHex,
         feeAmount: '0',
         kind: OrderKind.SELL,
         partiallyFillable: true,
         sellTokenBalance: SellTokenSource.ERC20,
         buyTokenBalance: BuyTokenDestination.ERC20,
         signingScheme: SigningScheme.PRESIGN,
-        signature: '',
+        signature: '0x',
+        from: config.gpv2Settlement,
+        receiver: config.receiver,
       })
     )
+  );
+  console.log(
+    'orderIds',
+    orders
+      .filter((x) => x.status === 'fulfilled')
+      .map((x) => (x as PromiseFulfilledResult<string>).value)
   );
   const toActuallySwap = toSwap.filter(
     (x, idx) => orders[idx].status === 'fulfilled'
   );
+  if (toActuallySwap.length === 0) return;
   const toApprove = toActuallySwap
     .filter((token) => token.needsApproval)
     .map((token) => token.tokenInfo.address);
@@ -367,22 +390,53 @@ const swapTokens = async (
   const approveTx: ContractTransaction = await moduleContract.approve(
     toApprove
   );
+  console.log('approveTx', approveTx.hash);
   const approveReceipt = await approveTx.wait();
   if (approveReceipt.status === 0)
     throw new Error(`approval failed: ${approveReceipt.transactionHash}`);
 
   const dripTx: ContractTransaction = await moduleContract.drip(toDrip);
+  console.log('dripTx', dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)
     throw new Error(`drip failed: ${dripTxReceipt.transactionHash}`);
 };
 
+const getAppData = async () => {
+  const metadataApi = new MetadataApi();
+  const appCode = 'CoWFeeModule';
+  const environment = 'prod';
+  const appDataDoc = await metadataApi.generateAppDataDoc({
+    appCode,
+    environment,
+    metadata: {},
+  });
+  const { cid, appDataHex, appDataContent } = await metadataApi.appDataToCid(
+    appDataDoc
+  );
+  return { cid, appDataHex, appDataContent };
+};
+
 const main = async () => {
+  // await getAppData().then(console.log);
+
   const config = readConfig();
   const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
+  console.log(
+    'tokensToSwap',
+    tokensToSwap.map((token) => [
+      token.tokenInfo.symbol,
+      token.tokenInfo.address,
+      formatUnits(token.balance, token.tokenInfo.decimals),
+      token.tokenInfo.price.rate,
+      token.usdValue,
+      token.tokenOut,
+      token.needsApproval,
+    ])
+  );
 
   for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {
     const toSwap = tokensToSwap.slice(i, i + config.maxOrders);
@@ -391,6 +445,7 @@ const main = async () => {
     } catch (err) {
       console.error(err);
     }
+    break;
   }
 };
 
