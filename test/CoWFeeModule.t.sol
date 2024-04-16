@@ -104,7 +104,7 @@ contract CoWFeeModuleTest is Test {
                 sellAmount: 100 ether,
                 buyAmount: 1,
                 validTo: nextValidTo,
-                appData: "CoWFeeModule",
+                appData: bytes32(0),
                 feeAmount: 0,
                 kind: SELL_KIND_HASH,
                 partiallyFillable: true,
