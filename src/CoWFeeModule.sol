@@ -96,7 +96,7 @@ contract CoWFeeModule {
         domainSeparator = settlement.domainSeparator();
     }
 
-    function approve(address[] memory _tokens) external onlyKeeper {
+    function approve(address[] calldata _tokens) external onlyKeeper {
         IGPv2Settlement.InteractionData[] memory approveInteractions =
             new IGPv2Settlement.InteractionData[](_tokens.length);
 
@@ -116,11 +116,11 @@ contract CoWFeeModule {
         _execInteractions(approveInteractions);
     }
 
-    function revoke(Revocation[] memory _revocations) external onlyKeeper {
+    function revoke(Revocation[] calldata _revocations) external onlyKeeper {
         IGPv2Settlement.InteractionData[] memory revokeInteractions =
             new IGPv2Settlement.InteractionData[](_revocations.length);
         for (uint256 i = 0; i < _revocations.length;) {
-            Revocation memory revocation = _revocations[i];
+            Revocation calldata revocation = _revocations[i];
             revokeInteractions[i] = IGPv2Settlement.InteractionData({
                 to: revocation.token,
                 value: 0,
@@ -134,7 +134,7 @@ contract CoWFeeModule {
         _execInteractions(revokeInteractions);
     }
 
-    function drip(SwapToken[] memory _swapTokens) external onlyKeeper {
+    function drip(SwapToken[] calldata _swapTokens) external onlyKeeper {
         IGPv2Settlement.InteractionData[] memory dripInteractions =
             new IGPv2Settlement.InteractionData[](_swapTokens.length);
 
@@ -154,7 +154,7 @@ contract CoWFeeModule {
         });
 
         for (uint256 i = 0; i < dripInteractions.length;) {
-            SwapToken memory swapToken = _swapTokens[i];
+            SwapToken calldata swapToken = _swapTokens[i];
             order.sellToken = swapToken.token;
             order.sellAmount = swapToken.sellAmount;
             bytes memory preSignature = _computePreSignature(order);
@@ -182,7 +182,6 @@ contract CoWFeeModule {
             receiver.execTransactionFromModuleReturnData(_to, 0, _cd, ISafe.Operation.Call);
         if (!success) {
             assembly ("memory-safe") {
-                /// @solidity-
                 revert(add(returnData, 0x20), mload(returnData))
             }
         }
