@@ -74,6 +74,7 @@ bytes32 constant SELL_KIND_HASH = keccak256("sell");
 contract CoWFeeModule {
     error OnlyKeeper();
 
+    // not public to save deployment costs
     ISafe immutable receiver;
     address immutable toToken;
     address immutable keeper;
@@ -98,6 +99,7 @@ contract CoWFeeModule {
         appData = _appData;
     }
 
+    /// @notice Approve given tokens of settlement contract to vault relayer
     function approve(address[] calldata _tokens) external onlyKeeper {
         IGPv2Settlement.InteractionData[] memory approveInteractions =
             new IGPv2Settlement.InteractionData[](_tokens.length);
@@ -118,6 +120,7 @@ contract CoWFeeModule {
         _execInteractions(approveInteractions);
     }
 
+    /// @notice Revoke approvals for given tokens to given contracts
     function revoke(Revocation[] calldata _revocations) external onlyKeeper {
         IGPv2Settlement.InteractionData[] memory revokeInteractions =
             new IGPv2Settlement.InteractionData[](_revocations.length);
@@ -136,6 +139,7 @@ contract CoWFeeModule {
         _execInteractions(revokeInteractions);
     }
 
+    /// @notice Commit presignatures for sell orders of given tokens of given amounts
     function drip(SwapToken[] calldata _swapTokens) external onlyKeeper {
         IGPv2Settlement.InteractionData[] memory dripInteractions =
             new IGPv2Settlement.InteractionData[](_swapTokens.length);
@@ -175,6 +179,8 @@ contract CoWFeeModule {
         _execInteractions(dripInteractions);
     }
 
+    /// @notice The `validTo` that the orders will be createad with
+    /// @dev deterministic so the script can push the orders before dripping onchain
     function nextValidTo() public view returns (uint32) {
         return 365 days * (uint32(block.timestamp + 365 days) / 365 days);
     }
@@ -205,6 +211,7 @@ contract CoWFeeModule {
         return abi.encodePacked(orderDigest, address(settlement), order.validTo);
     }
 
+    // copied over from GPv2Order.sol
     function _computeOrderHash(IGPv2Settlement.OrderData memory order) internal view returns (bytes32 orderDigest) {
         bytes32 structHash;
 
