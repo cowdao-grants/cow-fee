@@ -101,10 +101,6 @@ export const getTokensToSwap = async (
   config: IConfig,
   provider: ethers.providers.JsonRpcProvider
 ) => {
-  if (config.network !== 'mainnet') {
-    throw new Error('Only mainnet is supported');
-  }
-
   const unfiltered = await getTokenBalances(
     config.gpv2Settlement,
     config.network
@@ -117,7 +113,7 @@ export const getTokensToSwap = async (
       // if balance not found, return minValue so it can make the filter and
       // be checked against actual balance
       const usdValue = !!token.balance
-        ? +ethers.utils.formatUnits(token.balance, token.decimals)
+        ? +ethers.utils.formatUnits(token.balance, token.decimals) * token.rate
         : config.minValue;
       return { ...token, usdValue };
     })
