@@ -182,7 +182,7 @@ contract CoWFeeModule {
     /// @notice The `validTo` that the orders will be createad with
     /// @dev deterministic so the script can push the orders before dripping onchain
     function nextValidTo() public view returns (uint32) {
-        uint256 remainder = block.timestamp % 2 hours;
+        uint256 remainder = block.timestamp % 1 hours;
         return uint32((block.timestamp - remainder) + 2 hours);
     }
 
