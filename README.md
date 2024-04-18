@@ -5,8 +5,8 @@
 Module contract code is located [here](./src/CoWFeeModule.sol). The test for it
 is located [here](./test/CoWFeeModule.t.sol).
 
-The driver script is located at [index.ts](./index.ts). All other code is in the [ts](./ts)
-directory. It uses [Ethplorer](https://ethplorer.io) and [Blockscout](https://gnosis.blockscout.com) APIs
+The driver script is located at [`index.ts`](./index.ts). All other code is in the [`ts`](./ts)
+directory. It uses [`Ethplorer`](https://ethplorer.io) and [`Blockscout`](https://gnosis.blockscout.com) APIs
 to determine the different tokens held by the Settlement contract. It then filters them on the basis of:
 
 1. Their $ value, see `--min-value` param.
