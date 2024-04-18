@@ -1,10 +1,8 @@
 import { ethers } from 'ethers';
-import { default as minimist } from 'minimist';
 import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
-
-const ABI_CODER = new ethers.utils.AbiCoder();
+import { Command, Option } from '@commander-js/extra-typings';
 
 const readConfig = (): IConfig => {
   const readEnv = (key: string) => {
@@ -17,27 +15,57 @@ const readConfig = (): IConfig => {
 
   const privateKey = readEnv('PRIVATE_KEY');
 
-  const args = minimist(process.argv.slice(2));
-  const network = args.network || 'mainnet';
-  if (!Object.keys(networkSpecificConfigs).includes(network)) {
-    throw new Error(`Invalid network ${network}`);
-  }
+  const program = new Command()
+    .name('cow-fee')
+    .addOption(
+      new Option('--network <network>').choices(['mainnet', 'gnosis'] as const)
+    )
+    .addOption(new Option('--rpc-url <rpc-url>'))
+    .addOption(
+      new Option(
+        '--min-value <min-value>',
+        'Minimum USD value of token to swap'
+      )
+        .default(1000)
+        .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--max-orders <max-orders>',
+        'Maximum number of orders to place in single drip call'
+      )
+        .default(250)
+        .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--min-out <min-out>',
+        'Minimum amount of to-token to receive per swap'
+      )
+        .default(0.02)
+        .argParser((x) => +x)
+    );
+  program.parse();
+
+  const options = program.opts();
+
+  const { network: selectedNetwork, maxOrders, minValue, minOut } = options;
+  const network = selectedNetwork || 'mainnet';
+
   const {
     rpcUrl: defaultRpcUrl,
     module,
     gpv2Settlement,
     vaultRelayer,
     buyToken,
+    buyTokenDecimals,
     receiver,
   } = networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
-  const maxOrders = +args.maxOrders || 250;
-  const minValue = +args.minValue || 1000;
-  const minEthOut = +args.minEthOut || 0.02;
-  const rpcUrl = args['rpc-url'] || defaultRpcUrl;
+  const rpcUrl = options.rpcUrl || defaultRpcUrl;
 
   return {
     privateKey,
-    args,
+    options,
     maxOrders,
     minValue,
     module,
@@ -46,8 +74,9 @@ const readConfig = (): IConfig => {
     rpcUrl,
     network,
     buyToken,
-    minEthOut,
+    minOut,
     receiver,
+    buyTokenDecimals,
   };
 };
 
@@ -55,6 +84,7 @@ export const dripItAll = async () => {
   // await getAppData().then(console.log);
 
   const config = readConfig();
+  console.log(config.options);
   const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
   const signer = new ethers.Wallet(config.privateKey, provider);
 

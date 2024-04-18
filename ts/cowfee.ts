@@ -2,7 +2,7 @@ import { BigNumber, ContractTransaction, ethers } from 'ethers';
 import { IConfig, networkSpecificConfigs } from './common';
 import { getTokenBalances } from './explorer-apis';
 import { multicall3Abi, erc20Abi, moduleAbi } from './abi';
-import { formatUnits, parseEther } from 'ethers/lib/utils';
+import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
 import {
   BuyTokenDestination,
   OrderBookApi,
@@ -167,7 +167,8 @@ export const getTokensToSwap = async (
     .filter((_, i) => quotes[i].status === 'fulfilled');
 
   // filter by min eth out
-  const minOut = parseEther(config.minEthOut.toString());
+  // const minOut = parseEther(config.minOut.toString());
+  const minOut = parseUnits(config.minOut.toString(), config.buyTokenDecimals);
   const minOutFiltered = quotesFiltered.filter((token) =>
     BigNumber.from(token.tokenOut).gt(minOut)
   );

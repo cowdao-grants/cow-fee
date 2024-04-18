@@ -7,6 +7,7 @@ export const networkSpecificConfigs = {
     vaultRelayer: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110',
     buyToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     receiver: '0x423cEc87f19F0778f549846e0801ee267a917935',
+    buyTokenDecimals: 18,
   },
   gnosis: {
     // NOTE: replace with deployed address
@@ -17,12 +18,13 @@ export const networkSpecificConfigs = {
     buyToken: '0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1',
     // NOTE: needs to be changed for gnosis
     receiver: '0x423cEc87f19F0778f549846e0801ee267a917935',
+    buyTokenDecimals: 18,
   },
 };
 
 export interface IConfig {
   privateKey: string;
-  args: object;
+  options: object;
   maxOrders: number;
   minValue: number;
   module: string;
@@ -31,6 +33,7 @@ export interface IConfig {
   rpcUrl: string;
   network: keyof typeof networkSpecificConfigs;
   buyToken: string;
-  minEthOut: number;
+  minOut: number;
   receiver: string;
+  buyTokenDecimals: number;
 }
