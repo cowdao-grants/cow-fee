@@ -182,7 +182,8 @@ contract CoWFeeModule {
     /// @notice The `validTo` that the orders will be createad with
     /// @dev deterministic so the script can push the orders before dripping onchain
     function nextValidTo() public view returns (uint32) {
-        return 365 days * (uint32(block.timestamp + 365 days) / 365 days);
+        uint256 remainder = block.timestamp % 2 hours;
+        return (block.timestamp - remainder) + 2 hours;
     }
 
     function _execFromModule(address _to, bytes memory _cd) internal returns (bytes memory) {
