@@ -13,4 +13,4 @@ RUN yarn
 COPY . .
 
 # Run the script with yarn ts-node index.ts
-CMD ["yarn", "ts-node", "index.ts"]
+ENTRYPOINT ["yarn", "ts-node", "index.ts"]
