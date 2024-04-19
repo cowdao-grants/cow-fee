@@ -70,7 +70,7 @@ export const moduleAbi = [
       {
         name: '_swapTokens',
         type: 'tuple[]',
-        internalType: 'struct CoWFeeModule.SwapToken[]',
+        internalType: 'struct COWFeeModule.SwapToken[]',
         components: [
           {
             name: 'token',

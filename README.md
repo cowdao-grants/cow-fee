@@ -2,8 +2,8 @@
 
 ## Development
 
-Module contract code is located [here](./src/CoWFeeModule.sol). The test for it
-is located [here](./test/CoWFeeModule.t.sol).
+Module contract code is located [here](./src/COWFeeModule.sol). The test for it
+is located [here](./test/COWFeeModule.t.sol).
 
 The driver script is located at [`index.ts`](./index.ts). All other code is in the [`ts`](./ts)
 directory. It uses [`Ethplorer`](https://ethplorer.io) and [`Blockscout`](https://gnosis.blockscout.com) APIs
@@ -14,9 +14,9 @@ to determine the different tokens held by the Settlement contract. It then filte
 
 The program after filtering and determining which tokens to swap, posts the swap orders on the CoW OrderBook API.
 For all the orders that got successfully posted, it determines which of those orders require approval
-and sends a tx to call [`CoWFeeModule::approve`](./src/CoWFeeModule.sol).
+and sends a tx to call [`COWFeeModule::approve`](./src/COWFeeModule.sol).
 
-After the approval tx is confirmed, it sends another tx to call [`CoWFeeModule::drip`](./src/CoWFeeModule.sol)
+After the approval tx is confirmed, it sends another tx to call [`COWFeeModule::drip`](./src/COWFeeModule.sol)
 that sets the PreSignatures for all those orders.
 
 ## Usage

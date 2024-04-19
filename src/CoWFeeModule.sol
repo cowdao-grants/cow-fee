@@ -72,7 +72,7 @@ bytes32 constant ORDER_TYPE_HASH = hex"d5a25ba2e97094ad7d83dc28a6572da797d6b3e7f
 bytes32 constant ERC20_BALANCE_HASH = keccak256("erc20");
 bytes32 constant SELL_KIND_HASH = keccak256("sell");
 
-contract CoWFeeModule {
+contract COWFeeModule {
     error OnlyKeeper();
 
     // not public to save deployment costs

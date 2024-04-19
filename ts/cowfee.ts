@@ -175,10 +175,10 @@ export const getTokensToSwap = async (
   return minOutFiltered;
 };
 
-// get CoWFeeModule appData
+// get COWFeeModule appData
 export const getAppData = async () => {
   const metadataApi = new MetadataApi();
-  const appCode = 'CoWFeeModule';
+  const appCode = 'COWFeeModule';
   const environment = 'prod';
   const appDataDoc = await metadataApi.generateAppDataDoc({
     appCode,
