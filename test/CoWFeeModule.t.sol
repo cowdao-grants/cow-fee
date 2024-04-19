@@ -6,7 +6,9 @@ import {
     IGPv2Settlement,
     ERC20_BALANCE_HASH,
     SELL_KIND_HASH,
-    ORDER_TYPE_HASH
+    ORDER_TYPE_HASH,
+    GPv2Order,
+    IERC20
 } from "src/COWFeeModule.sol";
 import { Test, Vm } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
@@ -96,10 +98,10 @@ contract COWFeeModuleTest is Test {
         deal(address(mockToken), address(settlement), 100 ether);
 
         uint32 nextValidTo = module.nextValidTo();
-        bytes32 orderHash = _computeOrderHash(
-            IGPv2Settlement.OrderData({
-                sellToken: address(mockToken),
-                buyToken: WETH,
+        bytes32 orderHash = GPv2Order.hash(
+            GPv2Order.Data({
+                sellToken: IERC20(address(mockToken)),
+                buyToken: IERC20(WETH),
                 receiver: targetSafe,
                 sellAmount: 100 ether,
                 buyAmount: 1,
@@ -110,7 +112,8 @@ contract COWFeeModuleTest is Test {
                 partiallyFillable: true,
                 sellTokenBalance: ERC20_BALANCE_HASH,
                 buyTokenBalance: ERC20_BALANCE_HASH
-            })
+            }),
+            settlement.domainSeparator()
         );
         bytes memory preSignature = abi.encodePacked(orderHash, address(settlement), nextValidTo);
 
@@ -140,37 +143,5 @@ contract COWFeeModuleTest is Test {
         assertEq(owner, address(settlement), "owner not settlement");
         assertEq(signed, true, "not signed");
         assertEq(orderUid, preSignature, "orderUid not correct");
-    }
-
-    function _computeOrderHash(IGPv2Settlement.OrderData memory order) internal view returns (bytes32 orderDigest) {
-        bytes32 structHash;
-
-        // NOTE: Compute the EIP-712 order struct hash in place. As suggested
-        // in the EIP proposal, noting that the order struct has 10 fields, and
-        // including the type hash `(12 + 1) * 32 = 416` bytes to hash.
-        // <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md#rationale-for-encodedata>
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let dataStart := sub(order, 32)
-            let temp := mload(dataStart)
-            mstore(dataStart, ORDER_TYPE_HASH)
-            structHash := keccak256(dataStart, 416)
-            mstore(dataStart, temp)
-        }
-
-        bytes32 domainSeparator_ = settlement.domainSeparator();
-        // NOTE: Now that we have the struct hash, compute the EIP-712 signing
-        // hash using scratch memory past the free memory pointer. The signing
-        // hash is computed from `"\x19\x01" || domainSeparator || structHash`.
-        // <https://docs.soliditylang.org/en/v0.7.6/internals/layout_in_memory.html#layout-in-memory>
-        // <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md#specification>
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let freeMemoryPointer := mload(0x40)
-            mstore(freeMemoryPointer, "\x19\x01")
-            mstore(add(freeMemoryPointer, 2), domainSeparator_)
-            mstore(add(freeMemoryPointer, 34), structHash)
-            orderDigest := keccak256(freeMemoryPointer, 66)
-        }
     }
 }

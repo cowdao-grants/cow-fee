@@ -1,70 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
-interface ISafe {
-    enum Operation {
-        Call,
-        DelegateCall
-    }
-
-    function execTransactionFromModuleReturnData(address to, uint256 value, bytes memory data, Operation operation)
-        external
-        returns (bool success, bytes memory returnData);
-
-    function enableModule(address module) external;
-}
-
-interface IGPv2Settlement {
-    struct OrderData {
-        address sellToken;
-        address buyToken;
-        address receiver;
-        uint256 sellAmount;
-        uint256 buyAmount;
-        uint32 validTo;
-        bytes32 appData;
-        uint256 feeAmount;
-        bytes32 kind;
-        bool partiallyFillable;
-        bytes32 sellTokenBalance;
-        bytes32 buyTokenBalance;
-    }
-
-    struct TradeData {
-        uint256 sellTokenIndex;
-        uint256 buyTokenIndex;
-        address receiver;
-        uint256 sellAmount;
-        uint256 buyAmount;
-        uint32 validTo;
-        bytes32 appData;
-        uint256 feeAmount;
-        uint256 flags;
-        uint256 executedAmount;
-        bytes signature;
-    }
-
-    struct InteractionData {
-        address to;
-        uint256 value;
-        bytes callData;
-    }
-
-    function settle(
-        address[] memory tokens,
-        uint256[] memory clearingPrices,
-        TradeData[] memory trades,
-        InteractionData[][3] memory interactions
-    ) external;
-
-    function setPreSignature(bytes calldata orderUid, bool signed) external;
-
-    function domainSeparator() external view returns (bytes32);
-}
-
-interface IERC20 {
-    function approve(address, uint256) external;
-}
+import { ISafe } from "./interfaces/ISafe.sol";
+import { IGPv2Settlement } from "./interfaces/IGPv2Settlement.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { GPv2Order } from "./libraries/GPv2Order.sol";
 
 IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
 address constant vaultRelayer = 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
@@ -90,6 +30,13 @@ contract COWFeeModule {
     struct SwapToken {
         address token;
         uint256 sellAmount;
+    }
+
+    modifier onlyKeeper() {
+        if (msg.sender != keeper) {
+            revert OnlyKeeper();
+        }
+        _;
     }
 
     constructor(address _receiver, address _toToken, address _keeper, bytes32 _appData) {
@@ -145,9 +92,9 @@ contract COWFeeModule {
         IGPv2Settlement.InteractionData[] memory dripInteractions =
             new IGPv2Settlement.InteractionData[](_swapTokens.length);
 
-        IGPv2Settlement.OrderData memory order = IGPv2Settlement.OrderData({
-            sellToken: address(0),
-            buyToken: toToken,
+        GPv2Order.Data memory order = GPv2Order.Data({
+            sellToken: IERC20(address(0)),
+            buyToken: IERC20(toToken),
             receiver: address(receiver),
             sellAmount: 0,
             buyAmount: 1,
@@ -162,7 +109,7 @@ contract COWFeeModule {
 
         for (uint256 i = 0; i < dripInteractions.length;) {
             SwapToken calldata swapToken = _swapTokens[i];
-            order.sellToken = swapToken.token;
+            order.sellToken = IERC20(swapToken.token);
             order.sellAmount = swapToken.sellAmount;
             bytes memory preSignature = _computePreSignature(order);
 
@@ -208,48 +155,8 @@ contract COWFeeModule {
         _execFromModule(address(settlement), cd);
     }
 
-    function _computePreSignature(IGPv2Settlement.OrderData memory order) internal view returns (bytes memory) {
-        bytes32 orderDigest = _computeOrderHash(order);
+    function _computePreSignature(GPv2Order.Data memory order) internal view returns (bytes memory) {
+        bytes32 orderDigest = GPv2Order.hash(order, domainSeparator);
         return abi.encodePacked(orderDigest, address(settlement), order.validTo);
-    }
-
-    // copied over from GPv2Order.sol
-    function _computeOrderHash(IGPv2Settlement.OrderData memory order) internal view returns (bytes32 orderDigest) {
-        bytes32 structHash;
-
-        // NOTE: Compute the EIP-712 order struct hash in place. As suggested
-        // in the EIP proposal, noting that the order struct has 10 fields, and
-        // including the type hash `(12 + 1) * 32 = 416` bytes to hash.
-        // <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md#rationale-for-encodedata>
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let dataStart := sub(order, 32)
-            let temp := mload(dataStart)
-            mstore(dataStart, ORDER_TYPE_HASH)
-            structHash := keccak256(dataStart, 416)
-            mstore(dataStart, temp)
-        }
-
-        bytes32 domainSeparator_ = domainSeparator;
-        // NOTE: Now that we have the struct hash, compute the EIP-712 signing
-        // hash using scratch memory past the free memory pointer. The signing
-        // hash is computed from `"\x19\x01" || domainSeparator || structHash`.
-        // <https://docs.soliditylang.org/en/v0.7.6/internals/layout_in_memory.html#layout-in-memory>
-        // <https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md#specification>
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let freeMemoryPointer := mload(0x40)
-            mstore(freeMemoryPointer, "\x19\x01")
-            mstore(add(freeMemoryPointer, 2), domainSeparator_)
-            mstore(add(freeMemoryPointer, 34), structHash)
-            orderDigest := keccak256(freeMemoryPointer, 66)
-        }
-    }
-
-    modifier onlyKeeper() {
-        if (msg.sender != keeper) {
-            revert OnlyKeeper();
-        }
-        _;
     }
 }
