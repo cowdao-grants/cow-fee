@@ -1,15 +1,4 @@
-import {
-    COWFeeModule,
-    ISafe,
-    settlement,
-    vaultRelayer,
-    IGPv2Settlement,
-    ERC20_BALANCE_HASH,
-    SELL_KIND_HASH,
-    ORDER_TYPE_HASH,
-    GPv2Order,
-    IERC20
-} from "src/COWFeeModule.sol";
+import { COWFeeModule, ISafe, settlement, vaultRelayer, IGPv2Settlement, GPv2Order, IERC20 } from "src/COWFeeModule.sol";
 import { Test, Vm } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 
@@ -109,10 +98,10 @@ contract COWFeeModuleTest is Test {
                 validTo: nextValidTo,
                 appData: bytes32(0),
                 feeAmount: 0,
-                kind: SELL_KIND_HASH,
+                kind: GPv2Order.KIND_SELL,
                 partiallyFillable: true,
-                sellTokenBalance: ERC20_BALANCE_HASH,
-                buyTokenBalance: ERC20_BALANCE_HASH
+                sellTokenBalance: GPv2Order.BALANCE_ERC20,
+                buyTokenBalance: GPv2Order.BALANCE_ERC20
             }),
             settlement.domainSeparator()
         );

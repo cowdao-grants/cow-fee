@@ -8,9 +8,6 @@ import { GPv2Order } from "./libraries/GPv2Order.sol";
 
 IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
 address constant vaultRelayer = 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
-bytes32 constant ORDER_TYPE_HASH = hex"d5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489";
-bytes32 constant ERC20_BALANCE_HASH = keccak256("erc20");
-bytes32 constant SELL_KIND_HASH = keccak256("sell");
 
 contract COWFeeModule {
     error OnlyKeeper();
@@ -88,10 +85,10 @@ contract COWFeeModule {
             validTo: nextValidTo(),
             appData: appData,
             feeAmount: 0,
-            kind: SELL_KIND_HASH,
+            kind: GPv2Order.KIND_SELL,
             partiallyFillable: true,
-            sellTokenBalance: ERC20_BALANCE_HASH,
-            buyTokenBalance: ERC20_BALANCE_HASH
+            sellTokenBalance: GPv2Order.BALANCE_ERC20,
+            buyTokenBalance: GPv2Order.BALANCE_ERC20
         });
 
         for (uint256 i = 0; i < dripInteractions.length;) {
