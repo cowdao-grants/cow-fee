@@ -208,14 +208,19 @@ export const swapTokens = async (
   const nextValidTo = await moduleContract.nextValidTo();
   const { appDataHex, appDataContent } = await getAppData();
 
+  const toSwapWithBuyAmount = toSwap.map((token) => ({
+    ...token,
+    buyAmount: token.tokenOut.mul(10000 - config.buyAmountSlippage).div(10000),
+  }));
+
   // create orders
   const orders = await Promise.allSettled(
-    toSwap.map((token) =>
+    toSwapWithBuyAmount.map((token) =>
       orderBookApi.sendOrder({
         sellToken: token.address,
         buyToken: config.buyToken,
         sellAmount: token.balance.toString(),
-        buyAmount: '1',
+        buyAmount: token.buyAmount.toString(),
         validTo: nextValidTo,
         appData: appDataContent,
         appDataHash: appDataHex,
@@ -244,7 +249,7 @@ export const swapTokens = async (
       .map((x) => (x as PromiseFulfilledResult<string>).value)
   );
   // only execute drip for successfully created orders
-  const toActuallySwap = toSwap.filter(
+  const toActuallySwap = toSwapWithBuyAmount.filter(
     (x, idx) => orders[idx].status === 'fulfilled'
   );
 
@@ -259,7 +264,7 @@ export const swapTokens = async (
   const toDrip = toActuallySwap.map((token) => ({
     token: token.address,
     sellAmount: token.balance,
-    buyAmount: token.tokenOut.mul(10000 - config.buyAmountSlippage).div(10000),
+    buyAmount: token.buyAmount,
   }));
 
   // drip it
