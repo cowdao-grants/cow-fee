@@ -27,4 +27,5 @@ export interface IConfig {
   minOut: number;
   receiver: string;
   buyTokenDecimals: number;
+  buyAmountSlippage: number;
 }

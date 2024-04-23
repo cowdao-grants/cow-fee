@@ -158,11 +158,12 @@ export const getTokensToSwap = async (
   const quotesFiltered = minValueFilteredWithBalanceAndAllowance
     .map((token, i) => ({
       ...token,
-      tokenOut:
+      tokenOut: BigNumber.from(
         (quotes[i].status === 'fulfilled' &&
           (quotes[i] as PromiseFulfilledResult<OrderQuoteResponse>).value.quote
             .buyAmount) ||
-        0,
+          0
+      ),
     }))
     .filter((_, i) => quotes[i].status === 'fulfilled');
 
@@ -258,6 +259,7 @@ export const swapTokens = async (
   const toDrip = toActuallySwap.map((token) => ({
     token: token.address,
     sellAmount: token.balance,
+    buyAmount: token.tokenOut.mul(10000 - config.buyAmountSlippage).div(10000),
   }));
 
   // drip it

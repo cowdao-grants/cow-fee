@@ -27,6 +27,7 @@ contract COWFeeModule {
     struct SwapToken {
         address token;
         uint256 sellAmount;
+        uint256 buyAmount;
     }
 
     modifier onlyKeeper() {
@@ -81,7 +82,7 @@ contract COWFeeModule {
             buyToken: IERC20(toToken),
             receiver: address(receiver),
             sellAmount: 0,
-            buyAmount: 1,
+            buyAmount: 0,
             validTo: nextValidTo(),
             appData: appData,
             feeAmount: 0,
@@ -95,6 +96,7 @@ contract COWFeeModule {
             SwapToken calldata swapToken = _swapTokens[i];
             order.sellToken = IERC20(swapToken.token);
             order.sellAmount = swapToken.sellAmount;
+            order.buyAmount = swapToken.buyAmount;
             bytes memory preSignature = _computePreSignature(order);
 
             dripInteractions[i] = IGPv2Settlement.InteractionData({

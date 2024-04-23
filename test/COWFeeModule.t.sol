@@ -108,7 +108,7 @@ contract COWFeeModuleTest is Test {
         bytes memory preSignature = abi.encodePacked(orderHash, address(settlement), nextValidTo);
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
-        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), sellAmount: 100 ether });
+        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: 1, sellAmount: 100 ether });
 
         address[] memory approveTokens = new address[](1);
         approveTokens[0] = address(mockToken);

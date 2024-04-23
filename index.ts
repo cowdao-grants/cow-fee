@@ -47,12 +47,26 @@ const readConfig = async (): Promise<
       )
         .default(0.02)
         .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--buy-amount-slippage <buy-amount-slippage>',
+        'Tolerance to add to the quoted buyAmount'
+      )
+        .default(100)
+        .argParser((x) => +x)
     );
   program.parse();
 
   const options = program.opts();
 
-  const { network: selectedNetwork, maxOrders, minValue, minOut } = options;
+  const {
+    network: selectedNetwork,
+    maxOrders,
+    minValue,
+    minOut,
+    buyAmountSlippage,
+  } = options;
   const network = selectedNetwork || 'mainnet';
 
   const {
@@ -100,6 +114,7 @@ const readConfig = async (): Promise<
       minOut,
       receiver,
       buyTokenDecimals: toTokenDecimals,
+      buyAmountSlippage,
     },
     provider,
   ];

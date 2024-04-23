@@ -109,6 +109,11 @@ export const moduleAbi = [
             type: 'uint256',
             internalType: 'uint256',
           },
+          {
+            name: 'buyAmount',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
         ],
       },
     ],
