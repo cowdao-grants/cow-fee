@@ -49,23 +49,7 @@ contract COWFeeModule {
 
     /// @notice Approve given tokens of settlement contract to vault relayer
     function approve(address[] calldata _tokens) external onlyKeeper {
-        IGPv2Settlement.InteractionData[] memory approveInteractions =
-            new IGPv2Settlement.InteractionData[](_tokens.length);
-
-        for (uint256 i = 0; i < _tokens.length;) {
-            address token = _tokens[i];
-            approveInteractions[i] = IGPv2Settlement.InteractionData({
-                to: token,
-                value: 0,
-                callData: abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max))
-            });
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        _execInteractions(approveInteractions);
+        _approve(_tokens);
     }
 
     /// @notice Revoke approvals for given tokens to given contracts
@@ -87,8 +71,11 @@ contract COWFeeModule {
         _execInteractions(revokeInteractions);
     }
 
-    /// @notice Commit presignatures for sell orders of given tokens of given amounts
-    function drip(SwapToken[] calldata _swapTokens) external onlyKeeper {
+    /// @notice Commit presignatures for sell orders of given tokens of given amounts.
+    ///         Optionally, also approve the tokens to be spent to the vault relayer.
+    function drip(address[] calldata _approveTokens, SwapToken[] calldata _swapTokens) external onlyKeeper {
+        _approve(_approveTokens);
+
         IGPv2Settlement.InteractionData[] memory dripInteractions =
             new IGPv2Settlement.InteractionData[](_swapTokens.length);
 
@@ -132,6 +119,26 @@ contract COWFeeModule {
     function nextValidTo() public view returns (uint32) {
         uint256 remainder = block.timestamp % 1 hours;
         return uint32((block.timestamp - remainder) + 2 hours);
+    }
+
+    function _approve(address[] calldata _tokens) internal {
+        IGPv2Settlement.InteractionData[] memory approveInteractions =
+            new IGPv2Settlement.InteractionData[](_tokens.length);
+
+        for (uint256 i = 0; i < _tokens.length;) {
+            address token = _tokens[i];
+            approveInteractions[i] = IGPv2Settlement.InteractionData({
+                to: token,
+                value: 0,
+                callData: abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max))
+            });
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        _execInteractions(approveInteractions);
     }
 
     function _execFromModule(address _to, bytes memory _cd) internal returns (bytes memory) {

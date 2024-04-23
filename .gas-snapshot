@@ -1,4 +1,4 @@
-COWFeeModuleTest:testApprove() (gas: 86882)
-COWFeeModuleTest:testAuth() (gas: 11979)
-COWFeeModuleTest:testDrip() (gas: 258253)
-COWFeeModuleTest:testRevoke() (gas: 89581)
+COWFeeModuleTest:testApprove() (gas: 87037)
+COWFeeModuleTest:testAuth() (gas: 12623)
+COWFeeModuleTest:testDrip() (gas: 302318)
+COWFeeModuleTest:testRevoke() (gas: 89803)

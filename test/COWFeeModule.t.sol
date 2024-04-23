@@ -57,8 +57,9 @@ contract COWFeeModuleTest is Test {
         module.revoke(revocations);
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](0);
+        address[] memory approveTokens = new address[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
-        module.drip(swapTokens);
+        module.drip(approveTokens, swapTokens);
     }
 
     function testApprove() external {
@@ -120,9 +121,14 @@ contract COWFeeModuleTest is Test {
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
         swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), sellAmount: 100 ether });
 
+        address[] memory approveTokens = new address[](1);
+        approveTokens[0] = address(mockToken);
+        uint256 previousAllowance = mockToken.allowance(address(settlement), vaultRelayer);
+        assertEq(previousAllowance, 0, "previousAllowance not 0");
+
         vm.recordLogs();
         vm.prank(keeper);
-        module.drip(swapTokens);
+        module.drip(approveTokens, swapTokens);
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         bool found = false;
@@ -137,7 +143,8 @@ contract COWFeeModuleTest is Test {
                 break;
             }
         }
-
+        uint256 postDripAllowance = mockToken.allowance(address(settlement), vaultRelayer);
+        assertEq(postDripAllowance, type(uint256).max, "postDripAllowance not uint.max");
         assertTrue(found, "PreSignature not found");
 
         assertEq(owner, address(settlement), "owner not settlement");
