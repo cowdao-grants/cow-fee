@@ -16,11 +16,11 @@ contract COWFeeModule {
     error OnlyKeeper();
 
     // not public to save deployment costs
-    ISafe immutable receiver;
-    address immutable toToken;
-    address immutable keeper;
-    bytes32 immutable domainSeparator;
-    bytes32 immutable appData;
+    ISafe public immutable receiver;
+    address public immutable toToken;
+    address public immutable keeper;
+    bytes32 public immutable domainSeparator;
+    bytes32 public immutable appData;
 
     struct Revocation {
         address token;

@@ -231,6 +231,12 @@ export const swapTokens = async (
     )
   );
   console.log(
+    'failed',
+    orders
+      .filter((x) => x.status === 'rejected')
+      .map((x) => (x as PromiseRejectedResult).reason)
+  );
+  console.log(
     'orderIds',
     orders
       .filter((x) => x.status === 'fulfilled')
@@ -254,19 +260,11 @@ export const swapTokens = async (
     sellAmount: token.balance,
   }));
 
-  // if all tokens already approved, we can skip it
-  if (toApprove.length > 0) {
-    const approveTx: ContractTransaction = await moduleContract.approve(
-      toApprove
-    );
-    console.log('approveTx', approveTx.hash);
-    const approveReceipt = await approveTx.wait();
-    if (approveReceipt.status === 0)
-      throw new Error(`approval failed: ${approveReceipt.transactionHash}`);
-  }
-
   // drip it
-  const dripTx: ContractTransaction = await moduleContract.drip(toDrip);
+  const dripTx: ContractTransaction = await moduleContract.drip(
+    toApprove,
+    toDrip
+  );
   console.log('dripTx', dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)

@@ -3,8 +3,11 @@ import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
+import { erc20Abi, moduleAbi, settlementAbi } from './ts/abi';
 
-const readConfig = (): IConfig => {
+const readConfig = async (): Promise<
+  [IConfig, ethers.providers.JsonRpcProvider]
+> => {
   const readEnv = (key: string) => {
     const value = process.env[key];
     if (!value) {
@@ -56,36 +59,58 @@ const readConfig = (): IConfig => {
     rpcUrl: defaultRpcUrl,
     module,
     gpv2Settlement,
-    vaultRelayer,
-    buyToken,
-    buyTokenDecimals,
-    receiver,
   } = networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const rpcUrl = options.rpcUrl || defaultRpcUrl;
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 
-  return {
-    privateKey,
-    options,
-    maxOrders,
-    minValue,
-    module,
+  // vaultRelayer,
+  // buyToken,
+  // buyTokenDecimals,
+  // receiver,
+  const settlementContract = new ethers.Contract(
     gpv2Settlement,
-    vaultRelayer,
-    rpcUrl,
-    network,
-    buyToken,
-    minOut,
-    receiver,
-    buyTokenDecimals,
-  };
+    settlementAbi,
+    provider
+  );
+  const vaultRelayer = await settlementContract.vaultRelayer();
+
+  const moduleContract = new ethers.Contract(module, moduleAbi, provider);
+  const [receiver, toToken] = await Promise.all([
+    moduleContract.receiver(),
+    moduleContract.toToken(),
+  ]);
+  const toTokenDecimals = await new ethers.Contract(
+    toToken,
+    erc20Abi,
+    provider
+  ).decimals();
+
+  return [
+    {
+      privateKey,
+      options,
+      maxOrders,
+      minValue,
+      module,
+      gpv2Settlement,
+      vaultRelayer,
+      rpcUrl,
+      network,
+      buyToken: toToken,
+      minOut,
+      receiver,
+      buyTokenDecimals: toTokenDecimals,
+    },
+    provider,
+  ];
 };
 
 export const dripItAll = async () => {
   // await getAppData().then(console.log);
 
-  const config = readConfig();
+  const [config, provider] = await readConfig();
   console.log(config.options);
-  const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+  // return;
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
