@@ -56,7 +56,23 @@ const readConfig = async (): Promise<
         .default(100)
         .argParser((x) => +x)
     )
-    .addOption(new Option('--module <module>', 'COWFeeModule address'));
+    .addOption(new Option('--module <module>', 'COWFeeModule address'))
+    .addOption(
+      new Option(
+        '--token-list-strategy <strategy>',
+        'Strategy to use to get the list of tokens to swap on'
+      )
+        .choices(['explorer', 'chain'] as const)
+        .default('explorer' as 'explorer' | 'chain')
+    )
+    .addOption(
+      new Option(
+        '--lookback-range <n>',
+        'Last <n> number of blocks to check the `Trade` events for'
+      )
+        .default(1000)
+        .argParser((x) => +x)
+    );
   program.parse();
 
   const options = program.opts();
@@ -68,6 +84,8 @@ const readConfig = async (): Promise<
     minOut,
     buyAmountSlippage,
     module: selectedModule,
+    lookbackRange,
+    tokenListStrategy,
   } = options;
   const network = selectedNetwork || 'mainnet';
 
@@ -118,6 +136,8 @@ const readConfig = async (): Promise<
       buyAmountSlippage,
       keeper,
       appData,
+      tokenListStrategy,
+      lookbackRange,
     },
     provider,
   ];

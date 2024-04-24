@@ -38,6 +38,8 @@ Options:
   --min-out <min-out>                          Minimum amount of to-token to receive per swap (default: 0.02)
   --buy-amount-slippage <buy-amount-slippage>  Tolerance to add to the quoted buyAmount (default: 100)
   --module <module>                            COWFeeModule address
+  --token-list-strategy <strategy>             Strategy to use to get the list of tokens to swap on (choices: "explorer", "chain", default: "explorer")
+  --lookback-range <n>                         Last <n> number of blocks to check the `Trade` events for (default: 1000)
   -h, --help                                   display help for command
 ```
 
@@ -51,7 +53,9 @@ yarn ts-node index.ts \
   --min-out 0.1 \
   --rpc-url https://eth.llamarpc.com \
   --buy-amount-slippage 100 \
-  --module <module-address>
+  --module <module-address> \
+  --token-list-strategy explorer \
+  --lookback-range 1000
 ```
 
 ### Docker
@@ -69,5 +73,7 @@ docker run --rm \
   --min-out 0.1 \
   --rpc-url https://eth.llamarpc.com \
   --buy-amount-slippage 100 \
-  --module <module-address>
+  --module <module-address> \
+  --token-list-strategy explorer \
+  --lookback-range 1000
 ```

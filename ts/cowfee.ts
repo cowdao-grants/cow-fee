@@ -1,5 +1,10 @@
 import { BigNumber, ContractTransaction, ethers } from 'ethers';
-import { IConfig, networkSpecificConfigs } from './common';
+import {
+  IConfig,
+  getMulticall3,
+  getOrderbookApi,
+  networkSpecificConfigs,
+} from './common';
 import { getTokenBalances } from './explorer-apis';
 import { multicall3Abi, erc20Abi, moduleAbi } from './abi';
 import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
@@ -16,14 +21,6 @@ import {
 import { MetadataApi } from '@cowprotocol/app-data';
 
 const ABI_CODER = new ethers.utils.AbiCoder();
-
-const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
-  return new ethers.Contract(
-    '0xcA11bde05977b3631167028862bE2a173976CA11',
-    multicall3Abi,
-    provider
-  );
-};
 
 const getBalances = async (
   provider: ethers.providers.JsonRpcProvider,
@@ -68,42 +65,15 @@ const getAllowances = async (
   return allowances;
 };
 
-const toChainId = (network: keyof typeof networkSpecificConfigs) => {
-  switch (network) {
-    case 'mainnet': {
-      return SupportedChainId.MAINNET;
-    }
-    case 'gnosis': {
-      return SupportedChainId.GNOSIS_CHAIN;
-    }
-    default: {
-      throw new Error(`Unsupported network ${network}`);
-    }
-  }
-};
-
-const getOrderbookApi = (config: IConfig) => {
-  return new OrderBookApi({
-    chainId: toChainId(config.network),
-    limiterOpts: {
-      tokensPerInterval: 5,
-      interval: 'second',
-    },
-    backoffOpts: {
-      numOfAttempts: 5,
-      maxDelay: Infinity,
-      jitter: 'none',
-    },
-  });
-};
-
 export const getTokensToSwap = async (
   config: IConfig,
   provider: ethers.providers.JsonRpcProvider
 ) => {
   const unfiltered = await getTokenBalances(
     config.gpv2Settlement,
-    config.network
+    config.network,
+    config.tokenListStrategy,
+    config
   );
 
   // simple filter over balances provided by the explorer api
