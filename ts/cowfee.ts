@@ -211,10 +211,15 @@ export const swapTokens = async (
     throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
   }
 
-  const toSwapWithBuyAmount = toSwap.map((token) => ({
-    ...token,
-    buyAmount: token.tokenOut.mul(10000 - config.buyAmountSlippage).div(10000),
-  }));
+  const toSwapWithBuyAmount = toSwap.map((token) => {
+    const buyAmount = token.tokenOut
+      .mul(10000 - config.buyAmountSlippage)
+      .div(10000);
+    return {
+      ...token,
+      buyAmount: buyAmount.eq(0) ? BigNumber.from(1) : buyAmount,
+    };
+  });
 
   // create orders
   const orders = await Promise.allSettled(
