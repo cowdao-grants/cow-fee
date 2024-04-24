@@ -1,15 +1,13 @@
 export const networkSpecificConfigs = {
   mainnet: {
     // NOTE: replace with deployed address
-    module: '0x4c04377f90Eb1E42D845AB21De874803B8773669',
+    module: '0x29023DE63D7075B4cC2CE30B55f050f9c67548d4',
     rpcUrl: 'https://eth.llamarpc.com',
-    gpv2Settlement: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
   },
   gnosis: {
     // NOTE: replace with deployed address
     module: '0x4c04377f90Eb1E42D845AB21De874803B8773669',
     rpcUrl: 'https://1rpc.io/gnosis',
-    gpv2Settlement: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
   },
 };
 
@@ -28,4 +26,6 @@ export interface IConfig {
   receiver: string;
   buyTokenDecimals: number;
   buyAmountSlippage: number;
+  keeper: string;
+  appData: string;
 }

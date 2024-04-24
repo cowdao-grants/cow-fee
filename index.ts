@@ -55,7 +55,8 @@ const readConfig = async (): Promise<
       )
         .default(100)
         .argParser((x) => +x)
-    );
+    )
+    .addOption(new Option('--module <module>', 'COWFeeModule address'));
   program.parse();
 
   const options = program.opts();
@@ -66,33 +67,33 @@ const readConfig = async (): Promise<
     minValue,
     minOut,
     buyAmountSlippage,
+    module: selectedModule,
   } = options;
   const network = selectedNetwork || 'mainnet';
 
-  const {
-    rpcUrl: defaultRpcUrl,
-    module,
-    gpv2Settlement,
-  } = networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
+  const { rpcUrl: defaultRpcUrl, module: defaultModule } =
+    networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const rpcUrl = options.rpcUrl || defaultRpcUrl;
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-
-  // vaultRelayer,
-  // buyToken,
-  // buyTokenDecimals,
-  // receiver,
-  const settlementContract = new ethers.Contract(
-    gpv2Settlement,
-    settlementAbi,
-    provider
-  );
-  const vaultRelayer = await settlementContract.vaultRelayer();
+  const module = selectedModule || defaultModule;
 
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
-  const [receiver, toToken] = await Promise.all([
-    moduleContract.receiver(),
-    moduleContract.toToken(),
-  ]);
+  const [receiver, toToken, vaultRelayer, gpv2Settlement, keeper, appData] =
+    await Promise.all([
+      moduleContract.receiver(),
+      moduleContract.toToken(),
+      moduleContract.vaultRelayer(),
+      moduleContract.settlement(),
+      moduleContract.keeper(),
+      moduleContract.appData(),
+    ]);
+  if (
+    (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
+    keeper.toLowerCase()
+  ) {
+    throw new Error('Keeper key mismatch');
+  }
+
   const toTokenDecimals = await new ethers.Contract(
     toToken,
     erc20Abi,
@@ -115,6 +116,8 @@ const readConfig = async (): Promise<
       receiver,
       buyTokenDecimals: toTokenDecimals,
       buyAmountSlippage,
+      keeper,
+      appData,
     },
     provider,
   ];

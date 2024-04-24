@@ -6,11 +6,12 @@ contract COWFeeModuleDeployScript is Script {
         address receiver = vm.envAddress("RECEIVER");
         address toToken = vm.envAddress("TO_TOKEN");
         address keeper = vm.envAddress("KEEPER");
+        address settlement = vm.envAddress("SETTLEMENT");
         bytes32 appData = vm.envBytes32("APP_DATA");
         bool shouldEnableModule = vm.envBool("SHOULD_ENABLE_MODULE");
 
         vm.broadcast();
-        COWFeeModule module = new COWFeeModule(receiver, toToken, keeper, appData);
+        COWFeeModule module = new COWFeeModule(settlement, receiver, toToken, keeper, appData);
 
         // only useful for local anvil setup
         if (shouldEnableModule) {

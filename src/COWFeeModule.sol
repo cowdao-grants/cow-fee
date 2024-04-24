@@ -6,9 +6,6 @@ import { IGPv2Settlement } from "./interfaces/IGPv2Settlement.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { GPv2Order } from "./libraries/GPv2Order.sol";
 
-IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
-address constant vaultRelayer = 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
-
 contract COWFeeModule {
     error OnlyKeeper();
 
@@ -18,6 +15,8 @@ contract COWFeeModule {
     address public immutable keeper;
     bytes32 public immutable domainSeparator;
     bytes32 public immutable appData;
+    IGPv2Settlement public immutable settlement;
+    address public immutable vaultRelayer;
 
     struct Revocation {
         address token;
@@ -37,7 +36,9 @@ contract COWFeeModule {
         _;
     }
 
-    constructor(address _receiver, address _toToken, address _keeper, bytes32 _appData) {
+    constructor(address _settlement, address _receiver, address _toToken, address _keeper, bytes32 _appData) {
+        settlement = IGPv2Settlement(_settlement);
+        vaultRelayer = settlement.vaultRelayer();
         receiver = ISafe(_receiver);
         toToken = _toToken;
         keeper = _keeper;

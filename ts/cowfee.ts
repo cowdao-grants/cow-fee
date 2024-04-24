@@ -207,6 +207,9 @@ export const swapTokens = async (
   // deterministic next valid to
   const nextValidTo = await moduleContract.nextValidTo();
   const { appDataHex, appDataContent } = await getAppData();
+  if (appDataHex.toLowerCase() !== config.appData.toLowerCase()) {
+    throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
+  }
 
   const toSwapWithBuyAmount = toSwap.map((token) => ({
     ...token,
