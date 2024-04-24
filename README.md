@@ -28,12 +28,14 @@ variable.
 Usage: cow-fee [options]
 
 Options:
-  --network <network>         (choices: "mainnet", "gnosis")
+  --network <network>                           (choices: "mainnet", "gnosis")
   --rpc-url <rpc-url>
-  --min-value <min-value>    Minimum USD value of token to swap (default: 1000)
-  --max-orders <max-orders>  Maximum number of orders to place in single drip call (default: 250)
-  --min-out <min-out>        Minimum amount of to-token to receive per swap (default: 0.02)
-  -h, --help                 display help for command
+  --min-value <min-value>                      Minimum USD value of token to swap (default: 1000)
+  --max-orders <max-orders>                    Maximum number of orders to place in single drip call (default: 250)
+  --min-out <min-out>                          Minimum amount of to-token to receive per swap (default: 0.02)
+  --buy-amount-slippage <buy-amount-slippage>  Tolerance to add to the quoted buyAmount (default: 100)
+  --module <module>                            COWFeeModule address
+  -h, --help                                   display help for command
 ```
 
 ### Directly
@@ -44,7 +46,9 @@ yarn ts-node index.ts \
   --max-orders 250 \
   --min-value 1000 \
   --min-out 0.1 \
-  --rpc-url https://eth.llamarpc.com
+  --rpc-url https://eth.llamarpc.com \
+  --buy-amount-slippage 100 \
+  --module <module-address>
 ```
 
 ### Docker
@@ -60,5 +64,7 @@ docker run --rm \
   --max-orders 250 \
   --min-value 1000 \
   --min-out 0.1 \
-  --rpc-url https://eth.llamarpc.com
+  --rpc-url https://eth.llamarpc.com \
+  --buy-amount-slippage 100 \
+  --module <module-address>
 ```
