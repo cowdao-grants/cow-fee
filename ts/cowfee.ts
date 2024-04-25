@@ -76,21 +76,8 @@ export const getTokensToSwap = async (
     config
   );
 
-  // simple filter over balances provided by the explorer api
-  // to cut down on quotes needed
-  const minValueFiltered = unfiltered
-    .map((token) => {
-      // if balance not found, return minValue so it can make the filter and
-      // be checked against actual balance
-      const usdValue = !!token.balance
-        ? +ethers.utils.formatUnits(token.balance, token.decimals) * token.rate
-        : config.minValue;
-      return { ...token, usdValue };
-    })
-    .filter((x) => x.usdValue >= config.minValue);
-
   // populate the balances and allowances
-  const tokenAddresses = minValueFiltered.map((token) => token.address);
+  const tokenAddresses = unfiltered.map((token) => token.address);
   const [balances, allowances] = await Promise.all([
     getBalances(provider, config.gpv2Settlement, tokenAddresses),
     getAllowances(
@@ -101,21 +88,17 @@ export const getTokensToSwap = async (
     ),
   ]);
   // minValue filter again with _real_ balance
-  const minValueFilteredWithBalanceAndAllowance = minValueFiltered
-    .map((token, idx) => ({
-      ...token,
-      balance: balances[idx],
-      usdValue: +formatUnits(balances[idx], token.decimals) * token.rate,
-      allowance: allowances[idx],
-      needsApproval: allowances[idx].lt(balances[idx]),
-    }))
-    .filter((x) => x.usdValue >= config.minValue)
-    .sort((a, b) => b.usdValue - a.usdValue);
+  const unfilteredWithBalanceAndAllowance = unfiltered.map((token, idx) => ({
+    ...token,
+    balance: balances[idx],
+    allowance: allowances[idx],
+    needsApproval: allowances[idx].lt(balances[idx]),
+  }));
 
   // filter shitcoins with no liquidity by using the quotes api
   const orderBookApi = getOrderbookApi(config);
   const quotes = await Promise.allSettled(
-    minValueFilteredWithBalanceAndAllowance.map((token) =>
+    unfilteredWithBalanceAndAllowance.map((token) =>
       orderBookApi.getQuote({
         sellToken: token.address,
         sellAmountBeforeFee: token.balance.toString(),
@@ -125,7 +108,7 @@ export const getTokensToSwap = async (
       })
     )
   );
-  const quotesFiltered = minValueFilteredWithBalanceAndAllowance
+  const quotesFiltered = unfilteredWithBalanceAndAllowance
     .map((token, i) => ({
       ...token,
       tokenOut: BigNumber.from(

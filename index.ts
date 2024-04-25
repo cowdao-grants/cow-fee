@@ -26,14 +26,6 @@ const readConfig = async (): Promise<
     .addOption(new Option('--rpc-url <rpc-url>'))
     .addOption(
       new Option(
-        '--min-value <min-value>',
-        'Minimum USD value of token to swap'
-      )
-        .default(1000)
-        .argParser((x) => +x)
-    )
-    .addOption(
-      new Option(
         '--max-orders <max-orders>',
         'Maximum number of orders to place in single drip call'
       )
@@ -80,7 +72,6 @@ const readConfig = async (): Promise<
   const {
     network: selectedNetwork,
     maxOrders,
-    minValue,
     minOut,
     buyAmountSlippageBps,
     module: selectedModule,
@@ -123,7 +114,6 @@ const readConfig = async (): Promise<
       privateKey,
       options,
       maxOrders,
-      minValue,
       module,
       gpv2Settlement,
       vaultRelayer,
@@ -158,8 +148,6 @@ export const dripItAll = async () => {
       token.symbol,
       token.address,
       formatUnits(token.balance, token.decimals),
-      token.rate,
-      token.usdValue,
       token.tokenOut,
       token.needsApproval,
     ])

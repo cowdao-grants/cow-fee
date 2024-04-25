@@ -19,7 +19,6 @@ export interface IConfig {
   privateKey: string;
   options: object;
   maxOrders: number;
-  minValue: number;
   module: string;
   gpv2Settlement: string;
   vaultRelayer: string;

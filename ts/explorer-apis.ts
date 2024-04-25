@@ -6,7 +6,6 @@ import { erc20Abi, settlementAbi } from './abi';
 interface ITokenInfo {
   address: string;
   symbol: string;
-  rate: number;
   decimals: number;
   balance?: string;
 }
@@ -34,7 +33,6 @@ const getTokenInfosFromEthPlorer = async (
   return data.tokens.map((token) => ({
     address: token.tokenInfo.address,
     decimals: +token.tokenInfo.decimals,
-    rate: token.tokenInfo.price.rate,
     symbol: token.tokenInfo.symbol,
     balance: token.rawBalance,
   }));
@@ -63,7 +61,6 @@ const getTokenInfosFromBlockscout = async (
     .map((token) => ({
       address: token.token.address,
       decimals: +token.token.decimals,
-      rate: +token.token.exchange_rate,
       symbol: token.token.symbol,
       balance: token.value,
     }));
