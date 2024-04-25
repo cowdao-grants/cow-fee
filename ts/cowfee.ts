@@ -183,7 +183,7 @@ export const swapTokens = async (
 
   const toSwapWithBuyAmount = toSwap.map((token) => {
     const buyAmount = token.tokenOut
-      .mul(10000 - config.buyAmountSlippage)
+      .mul(10000 - config.buyAmountSlippageBps)
       .div(10000);
     return {
       ...token,

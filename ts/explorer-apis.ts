@@ -175,9 +175,14 @@ export const getTokenBalances = async (
 ): Promise<ITokenInfo[]> => {
   switch (strategy) {
     case 'explorer': {
-      return network === 'mainnet'
-        ? getTokenInfosFromEthPlorer(address)
-        : getTokenInfosFromBlockscout(address);
+      switch (network) {
+        case 'mainnet': {
+          return getTokenInfosFromEthPlorer(address);
+        }
+        case 'gnosis': {
+          return getTokenInfosFromBlockscout(address);
+        }
+      }
     }
     case 'chain': {
       return getTokenInfosFromChain(config);

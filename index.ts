@@ -50,7 +50,7 @@ const readConfig = async (): Promise<
     )
     .addOption(
       new Option(
-        '--buy-amount-slippage <buy-amount-slippage>',
+        '--buy-amount-slippage-bps <buy-amount-slippage-bps>',
         'Tolerance to add to the quoted buyAmount'
       )
         .default(100)
@@ -82,7 +82,7 @@ const readConfig = async (): Promise<
     maxOrders,
     minValue,
     minOut,
-    buyAmountSlippage,
+    buyAmountSlippageBps,
     module: selectedModule,
     lookbackRange,
     tokenListStrategy,
@@ -133,7 +133,7 @@ const readConfig = async (): Promise<
       minOut,
       receiver,
       buyTokenDecimals: toTokenDecimals,
-      buyAmountSlippage,
+      buyAmountSlippageBps,
       keeper,
       appData,
       tokenListStrategy,

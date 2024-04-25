@@ -29,7 +29,7 @@ export interface IConfig {
   minOut: number;
   receiver: string;
   buyTokenDecimals: number;
-  buyAmountSlippage: number;
+  buyAmountSlippageBps: number;
   keeper: string;
   appData: string;
   tokenListStrategy: 'explorer' | 'chain';
