@@ -9,8 +9,7 @@ The driver script is located at [`index.ts`](./index.ts). All other code is in t
 directory. It uses [`Ethplorer`](https://ethplorer.io) and [`Blockscout`](https://gnosis.blockscout.com) APIs
 to determine the different tokens held by the Settlement contract. It then filters them on the basis of:
 
-1. Their $ value, see `--min-value` param.
-2. Swap output value, see `--min-out` param.
+1. Swap output value, see `--min-out` param.
 
 The program after filtering and determining which tokens to swap, posts the swap orders on the CoW OrderBook API.
 For all the orders that got successfully posted, it determines which of those orders require approval
@@ -31,16 +30,15 @@ variable.
 Usage: cow-fee [options]
 
 Options:
-  --network <network>                           (choices: "mainnet", "gnosis")
+  --network <network>                                   (choices: "mainnet", "gnosis")
   --rpc-url <rpc-url>
-  --min-value <min-value>                      Minimum USD value of token to swap (default: 1000)
-  --max-orders <max-orders>                    Maximum number of orders to place in single drip call (default: 250)
-  --min-out <min-out>                          Minimum amount of to-token to receive per swap (default: 0.02)
-  --buy-amount-slippage <buy-amount-slippage>  Tolerance to add to the quoted buyAmount (default: 100)
-  --module <module>                            COWFeeModule address
-  --token-list-strategy <strategy>             Strategy to use to get the list of tokens to swap on (choices: "explorer", "chain", default: "explorer")
-  --lookback-range <n>                         Last <n> number of blocks to check the `Trade` events for (default: 1000)
-  -h, --help                                   display help for command
+  --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
+  --min-out <min-out>                                  Minimum amount of to-token to receive per swap (default: 0.02)
+  --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
+  --module <module>                                    COWFeeModule address
+  --token-list-strategy <strategy>                     Strategy to use to get the list of tokens to swap on (choices: "explorer", "chain", default: "explorer")
+  --lookback-range <n>                                 Last <n> number of blocks to check the `Trade` events for (default: 1000)
+  -h, --help                                           display help for command
 ```
 
 ### Directly
@@ -49,10 +47,9 @@ Options:
 yarn ts-node index.ts \
   --network mainnet \
   --max-orders 250 \
-  --min-value 1000 \
   --min-out 0.1 \
   --rpc-url https://eth.llamarpc.com \
-  --buy-amount-slippage 100 \
+  --buy-amount-slippage-bps 100 \
   --module <module-address> \
   --token-list-strategy explorer \
   --lookback-range 1000
@@ -69,10 +66,9 @@ docker run --rm \
   cow-fee \
   --network mainnet \
   --max-orders 250 \
-  --min-value 1000 \
   --min-out 0.1 \
   --rpc-url https://eth.llamarpc.com \
-  --buy-amount-slippage 100 \
+  --buy-amount-slippage-bps 100 \
   --module <module-address> \
   --token-list-strategy explorer \
   --lookback-range 1000
