@@ -1,5 +1,10 @@
 import { BigNumber, ContractTransaction, ethers } from 'ethers';
-import { IConfig, networkSpecificConfigs } from './common';
+import {
+  IConfig,
+  getMulticall3,
+  getOrderbookApi,
+  networkSpecificConfigs,
+} from './common';
 import { getTokenBalances } from './explorer-apis';
 import { multicall3Abi, erc20Abi, moduleAbi } from './abi';
 import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
@@ -16,14 +21,6 @@ import {
 import { MetadataApi } from '@cowprotocol/app-data';
 
 const ABI_CODER = new ethers.utils.AbiCoder();
-
-const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
-  return new ethers.Contract(
-    '0xcA11bde05977b3631167028862bE2a173976CA11',
-    multicall3Abi,
-    provider
-  );
-};
 
 const getBalances = async (
   provider: ethers.providers.JsonRpcProvider,
@@ -68,59 +65,19 @@ const getAllowances = async (
   return allowances;
 };
 
-const toChainId = (network: keyof typeof networkSpecificConfigs) => {
-  switch (network) {
-    case 'mainnet': {
-      return SupportedChainId.MAINNET;
-    }
-    case 'gnosis': {
-      return SupportedChainId.GNOSIS_CHAIN;
-    }
-    default: {
-      throw new Error(`Unsupported network ${network}`);
-    }
-  }
-};
-
-const getOrderbookApi = (config: IConfig) => {
-  return new OrderBookApi({
-    chainId: toChainId(config.network),
-    limiterOpts: {
-      tokensPerInterval: 5,
-      interval: 'second',
-    },
-    backoffOpts: {
-      numOfAttempts: 5,
-      maxDelay: Infinity,
-      jitter: 'none',
-    },
-  });
-};
-
 export const getTokensToSwap = async (
   config: IConfig,
   provider: ethers.providers.JsonRpcProvider
 ) => {
   const unfiltered = await getTokenBalances(
     config.gpv2Settlement,
-    config.network
+    config.network,
+    config.tokenListStrategy,
+    config
   );
 
-  // simple filter over balances provided by the explorer api
-  // to cut down on quotes needed
-  const minValueFiltered = unfiltered
-    .map((token) => {
-      // if balance not found, return minValue so it can make the filter and
-      // be checked against actual balance
-      const usdValue = !!token.balance
-        ? +ethers.utils.formatUnits(token.balance, token.decimals) * token.rate
-        : config.minValue;
-      return { ...token, usdValue };
-    })
-    .filter((x) => x.usdValue >= config.minValue);
-
   // populate the balances and allowances
-  const tokenAddresses = minValueFiltered.map((token) => token.address);
+  const tokenAddresses = unfiltered.map((token) => token.address);
   const [balances, allowances] = await Promise.all([
     getBalances(provider, config.gpv2Settlement, tokenAddresses),
     getAllowances(
@@ -131,21 +88,17 @@ export const getTokensToSwap = async (
     ),
   ]);
   // minValue filter again with _real_ balance
-  const minValueFilteredWithBalanceAndAllowance = minValueFiltered
-    .map((token, idx) => ({
-      ...token,
-      balance: balances[idx],
-      usdValue: +formatUnits(balances[idx], token.decimals) * token.rate,
-      allowance: allowances[idx],
-      needsApproval: allowances[idx].lt(balances[idx]),
-    }))
-    .filter((x) => x.usdValue >= config.minValue)
-    .sort((a, b) => b.usdValue - a.usdValue);
+  const unfilteredWithBalanceAndAllowance = unfiltered.map((token, idx) => ({
+    ...token,
+    balance: balances[idx],
+    allowance: allowances[idx],
+    needsApproval: allowances[idx].lt(balances[idx]),
+  }));
 
   // filter shitcoins with no liquidity by using the quotes api
   const orderBookApi = getOrderbookApi(config);
   const quotes = await Promise.allSettled(
-    minValueFilteredWithBalanceAndAllowance.map((token) =>
+    unfilteredWithBalanceAndAllowance.map((token) =>
       orderBookApi.getQuote({
         sellToken: token.address,
         sellAmountBeforeFee: token.balance.toString(),
@@ -155,14 +108,15 @@ export const getTokensToSwap = async (
       })
     )
   );
-  const quotesFiltered = minValueFilteredWithBalanceAndAllowance
+  const quotesFiltered = unfilteredWithBalanceAndAllowance
     .map((token, i) => ({
       ...token,
-      tokenOut:
+      tokenOut: BigNumber.from(
         (quotes[i].status === 'fulfilled' &&
           (quotes[i] as PromiseFulfilledResult<OrderQuoteResponse>).value.quote
             .buyAmount) ||
-        0,
+          0
+      ),
     }))
     .filter((_, i) => quotes[i].status === 'fulfilled');
 
@@ -206,15 +160,28 @@ export const swapTokens = async (
   // deterministic next valid to
   const nextValidTo = await moduleContract.nextValidTo();
   const { appDataHex, appDataContent } = await getAppData();
+  if (appDataHex.toLowerCase() !== config.appData.toLowerCase()) {
+    throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
+  }
+
+  const toSwapWithBuyAmount = toSwap.map((token) => {
+    const buyAmount = token.tokenOut
+      .mul(10000 - config.buyAmountSlippageBps)
+      .div(10000);
+    return {
+      ...token,
+      buyAmount: buyAmount.eq(0) ? BigNumber.from(1) : buyAmount,
+    };
+  });
 
   // create orders
   const orders = await Promise.allSettled(
-    toSwap.map((token) =>
+    toSwapWithBuyAmount.map((token) =>
       orderBookApi.sendOrder({
         sellToken: token.address,
         buyToken: config.buyToken,
         sellAmount: token.balance.toString(),
-        buyAmount: '1',
+        buyAmount: token.buyAmount.toString(),
         validTo: nextValidTo,
         appData: appDataContent,
         appDataHash: appDataHex,
@@ -231,13 +198,19 @@ export const swapTokens = async (
     )
   );
   console.log(
+    'failed',
+    orders
+      .filter((x) => x.status === 'rejected')
+      .map((x) => (x as PromiseRejectedResult).reason)
+  );
+  console.log(
     'orderIds',
     orders
       .filter((x) => x.status === 'fulfilled')
       .map((x) => (x as PromiseFulfilledResult<string>).value)
   );
   // only execute drip for successfully created orders
-  const toActuallySwap = toSwap.filter(
+  const toActuallySwap = toSwapWithBuyAmount.filter(
     (x, idx) => orders[idx].status === 'fulfilled'
   );
 
@@ -252,21 +225,14 @@ export const swapTokens = async (
   const toDrip = toActuallySwap.map((token) => ({
     token: token.address,
     sellAmount: token.balance,
+    buyAmount: token.buyAmount,
   }));
 
-  // if all tokens already approved, we can skip it
-  if (toApprove.length > 0) {
-    const approveTx: ContractTransaction = await moduleContract.approve(
-      toApprove
-    );
-    console.log('approveTx', approveTx.hash);
-    const approveReceipt = await approveTx.wait();
-    if (approveReceipt.status === 0)
-      throw new Error(`approval failed: ${approveReceipt.transactionHash}`);
-  }
-
   // drip it
-  const dripTx: ContractTransaction = await moduleContract.drip(toDrip);
+  const dripTx: ContractTransaction = await moduleContract.drip(
+    toApprove,
+    toDrip
+  );
   console.log('dripTx', dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)

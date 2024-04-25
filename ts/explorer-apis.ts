@@ -1,10 +1,11 @@
 import axios from 'axios';
-import { IConfig } from './common';
+import { IConfig, getMulticall3, getOrderbookApi } from './common';
+import { BigNumber, ethers } from 'ethers';
+import { erc20Abi, settlementAbi } from './abi';
 
 interface ITokenInfo {
   address: string;
   symbol: string;
-  rate: number;
   decimals: number;
   balance?: string;
 }
@@ -32,7 +33,6 @@ const getTokenInfosFromEthPlorer = async (
   return data.tokens.map((token) => ({
     address: token.tokenInfo.address,
     decimals: +token.tokenInfo.decimals,
-    rate: token.tokenInfo.price.rate,
     symbol: token.tokenInfo.symbol,
     balance: token.rawBalance,
   }));
@@ -61,22 +61,110 @@ const getTokenInfosFromBlockscout = async (
     .map((token) => ({
       address: token.token.address,
       decimals: +token.token.decimals,
-      rate: +token.token.exchange_rate,
       symbol: token.token.symbol,
       balance: token.value,
     }));
 };
 
+interface IDefillamaPriceResponse {
+  coins: {
+    'coingecko:ethereum': {
+      price: number;
+    };
+  };
+}
+
+const getEthPrice = async () => {
+  const { data } = await axios.get<IDefillamaPriceResponse>(
+    'https://coins.llama.fi/prices/current/coingecko:ethereum'
+  );
+  return data.coins['coingecko:ethereum'].price;
+};
+
+const ABI_CODER = new ethers.utils.AbiCoder();
+
+const getDecimals = async (
+  provider: ethers.providers.JsonRpcProvider,
+  tokens: string[]
+): Promise<number[]> => {
+  const Multicall3 = getMulticall3(provider);
+  const decimalsCalldata = new ethers.utils.Interface(
+    erc20Abi
+  ).encodeFunctionData('decimals');
+  const cds = tokens.map((token) => ({
+    target: token,
+    callData: decimalsCalldata,
+  }));
+  const decimalsRet = await Multicall3.tryAggregate(false, cds);
+  const decimals = decimalsRet.map((r: any, idx: number) => {
+    if (!r.success) return 0;
+
+    try {
+      return ABI_CODER.decode(['uint8'], r.returnData)[0];
+    } catch (err) {
+      console.log('errror decoding', r.returnData, tokens[idx]);
+    }
+  }) as number[];
+  return decimals;
+};
+
+export const getTokenInfosFromChain = async (
+  config: IConfig
+): Promise<ITokenInfo[]> => {
+  const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+  const settlement = new ethers.Contract(
+    config.gpv2Settlement,
+    settlementAbi,
+    provider
+  );
+  const tradeFilter = settlement.filters.Trade();
+  const currentBlock = await provider.getBlockNumber();
+  const logs = await settlement.queryFilter(
+    tradeFilter,
+    currentBlock - config.lookbackRange,
+    currentBlock
+  );
+  const allTokens = Array.from(
+    new Set(
+      logs.map((log) => [log.args!.sellToken, log.args!.buyToken]).flat()
+    ).values()
+  ).filter(
+    (x) =>
+      x.toLowerCase() !==
+      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
+  );
+
+  const allDecimals = await getDecimals(provider, allTokens);
+  const allTokenInfo: ITokenInfo[] = allTokens.map((token, idx) => {
+    const decimals = allDecimals[idx];
+    return {
+      address: token,
+      decimals,
+      symbol: '',
+    };
+  });
+  return allTokenInfo;
+};
+
 export const getTokenBalances = async (
   address: string,
-  network: IConfig['network']
+  network: IConfig['network'],
+  strategy: 'explorer' | 'chain',
+  config: IConfig
 ): Promise<ITokenInfo[]> => {
-  switch (network) {
-    case 'mainnet': {
-      return getTokenInfosFromEthPlorer(address);
+  switch (strategy) {
+    case 'explorer': {
+      switch (network) {
+        case 'mainnet': {
+          return getTokenInfosFromEthPlorer(address);
+        }
+        case 'gnosis': {
+          return getTokenInfosFromBlockscout(address);
+        }
+      }
     }
-    case 'gnosis': {
-      return getTokenInfosFromBlockscout(address);
+    case 'chain': {
+      return getTokenInfosFromChain(config);
     }
   }
 };

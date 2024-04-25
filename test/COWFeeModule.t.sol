@@ -1,15 +1,4 @@
-import {
-    COWFeeModule,
-    ISafe,
-    settlement,
-    vaultRelayer,
-    IGPv2Settlement,
-    ERC20_BALANCE_HASH,
-    SELL_KIND_HASH,
-    ORDER_TYPE_HASH,
-    GPv2Order,
-    IERC20
-} from "src/COWFeeModule.sol";
+import { COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20 } from "src/COWFeeModule.sol";
 import { Test, Vm } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
 
@@ -31,11 +20,14 @@ contract COWFeeModuleTest is Test {
     address keeper = makeAddr("keeper");
     COWFeeModule module;
     MockERC20 mockToken;
-    address targetSafe = 0x423cEc87f19F0778f549846e0801ee267a917935;
-    address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant targetSafe = 0x423cEc87f19F0778f549846e0801ee267a917935;
+    address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
+    address vaultRelayer;
 
     function setUp() external {
-        module = new COWFeeModule(targetSafe, WETH, keeper, bytes32(0));
+        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0));
+        vaultRelayer = module.vaultRelayer();
         mockToken = new MockERC20();
 
         vm.label(address(settlement), "settlement");
@@ -109,17 +101,17 @@ contract COWFeeModuleTest is Test {
                 validTo: nextValidTo,
                 appData: bytes32(0),
                 feeAmount: 0,
-                kind: SELL_KIND_HASH,
+                kind: GPv2Order.KIND_SELL,
                 partiallyFillable: true,
-                sellTokenBalance: ERC20_BALANCE_HASH,
-                buyTokenBalance: ERC20_BALANCE_HASH
+                sellTokenBalance: GPv2Order.BALANCE_ERC20,
+                buyTokenBalance: GPv2Order.BALANCE_ERC20
             }),
             settlement.domainSeparator()
         );
         bytes memory preSignature = abi.encodePacked(orderHash, address(settlement), nextValidTo);
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
-        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), sellAmount: 100 ether });
+        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: 1, sellAmount: 100 ether });
 
         address[] memory approveTokens = new address[](1);
         approveTokens[0] = address(mockToken);

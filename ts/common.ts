@@ -1,24 +1,17 @@
+import { OrderBookApi, SupportedChainId } from '@cowprotocol/cow-sdk';
+import { ethers } from 'ethers';
+import { multicall3Abi } from './abi';
+
 export const networkSpecificConfigs = {
   mainnet: {
     // NOTE: replace with deployed address
-    module: '0x90E75f390332356426B60FB440DF23f860F6A113',
+    module: '0x29023DE63D7075B4cC2CE30B55f050f9c67548d4',
     rpcUrl: 'https://eth.llamarpc.com',
-    gpv2Settlement: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
-    vaultRelayer: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110',
-    buyToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-    receiver: '0x423cEc87f19F0778f549846e0801ee267a917935',
-    buyTokenDecimals: 18,
   },
   gnosis: {
     // NOTE: replace with deployed address
-    module: '0x90E75f390332356426B60FB440DF23f860F6A113',
+    module: '0x4c04377f90Eb1E42D845AB21De874803B8773669',
     rpcUrl: 'https://1rpc.io/gnosis',
-    gpv2Settlement: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
-    vaultRelayer: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110',
-    buyToken: '0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1',
-    // NOTE: needs to be changed for gnosis
-    receiver: '0x423cEc87f19F0778f549846e0801ee267a917935',
-    buyTokenDecimals: 18,
   },
 };
 
@@ -26,7 +19,6 @@ export interface IConfig {
   privateKey: string;
   options: object;
   maxOrders: number;
-  minValue: number;
   module: string;
   gpv2Settlement: string;
   vaultRelayer: string;
@@ -36,4 +28,46 @@ export interface IConfig {
   minOut: number;
   receiver: string;
   buyTokenDecimals: number;
+  buyAmountSlippageBps: number;
+  keeper: string;
+  appData: string;
+  tokenListStrategy: 'explorer' | 'chain';
+  lookbackRange: number;
 }
+
+const toChainId = (network: keyof typeof networkSpecificConfigs) => {
+  switch (network) {
+    case 'mainnet': {
+      return SupportedChainId.MAINNET;
+    }
+    case 'gnosis': {
+      return SupportedChainId.GNOSIS_CHAIN;
+    }
+    default: {
+      throw new Error(`Unsupported network ${network}`);
+    }
+  }
+};
+
+export const getOrderbookApi = (config: IConfig) => {
+  return new OrderBookApi({
+    chainId: toChainId(config.network),
+    limiterOpts: {
+      tokensPerInterval: 5,
+      interval: 'second',
+    },
+    backoffOpts: {
+      numOfAttempts: 5,
+      maxDelay: Infinity,
+      jitter: 'none',
+    },
+  });
+};
+
+export const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
+  return new ethers.Contract(
+    '0xcA11bde05977b3631167028862bE2a173976CA11',
+    multicall3Abi,
+    provider
+  );
+};

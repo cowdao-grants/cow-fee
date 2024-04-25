@@ -6,21 +6,17 @@ import { IGPv2Settlement } from "./interfaces/IGPv2Settlement.sol";
 import { IERC20 } from "./interfaces/IERC20.sol";
 import { GPv2Order } from "./libraries/GPv2Order.sol";
 
-IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
-address constant vaultRelayer = 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
-bytes32 constant ORDER_TYPE_HASH = hex"d5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489";
-bytes32 constant ERC20_BALANCE_HASH = keccak256("erc20");
-bytes32 constant SELL_KIND_HASH = keccak256("sell");
-
 contract COWFeeModule {
     error OnlyKeeper();
 
     // not public to save deployment costs
-    ISafe immutable receiver;
-    address immutable toToken;
-    address immutable keeper;
-    bytes32 immutable domainSeparator;
-    bytes32 immutable appData;
+    ISafe public immutable receiver;
+    address public immutable toToken;
+    address public immutable keeper;
+    bytes32 public immutable domainSeparator;
+    bytes32 public immutable appData;
+    IGPv2Settlement public immutable settlement;
+    address public immutable vaultRelayer;
 
     struct Revocation {
         address token;
@@ -30,6 +26,7 @@ contract COWFeeModule {
     struct SwapToken {
         address token;
         uint256 sellAmount;
+        uint256 buyAmount;
     }
 
     modifier onlyKeeper() {
@@ -39,7 +36,9 @@ contract COWFeeModule {
         _;
     }
 
-    constructor(address _receiver, address _toToken, address _keeper, bytes32 _appData) {
+    constructor(address _settlement, address _receiver, address _toToken, address _keeper, bytes32 _appData) {
+        settlement = IGPv2Settlement(_settlement);
+        vaultRelayer = settlement.vaultRelayer();
         receiver = ISafe(_receiver);
         toToken = _toToken;
         keeper = _keeper;
@@ -84,20 +83,21 @@ contract COWFeeModule {
             buyToken: IERC20(toToken),
             receiver: address(receiver),
             sellAmount: 0,
-            buyAmount: 1,
+            buyAmount: 0,
             validTo: nextValidTo(),
             appData: appData,
             feeAmount: 0,
-            kind: SELL_KIND_HASH,
+            kind: GPv2Order.KIND_SELL,
             partiallyFillable: true,
-            sellTokenBalance: ERC20_BALANCE_HASH,
-            buyTokenBalance: ERC20_BALANCE_HASH
+            sellTokenBalance: GPv2Order.BALANCE_ERC20,
+            buyTokenBalance: GPv2Order.BALANCE_ERC20
         });
 
         for (uint256 i = 0; i < dripInteractions.length;) {
             SwapToken calldata swapToken = _swapTokens[i];
             order.sellToken = IERC20(swapToken.token);
             order.sellAmount = swapToken.sellAmount;
+            order.buyAmount = swapToken.buyAmount;
             bytes memory preSignature = _computePreSignature(order);
 
             dripInteractions[i] = IGPv2Settlement.InteractionData({

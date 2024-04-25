@@ -3,8 +3,11 @@ import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
+import { erc20Abi, moduleAbi, settlementAbi } from './ts/abi';
 
-const readConfig = (): IConfig => {
+const readConfig = async (): Promise<
+  [IConfig, ethers.providers.JsonRpcProvider]
+> => {
   const readEnv = (key: string) => {
     const value = process.env[key];
     if (!value) {
@@ -23,14 +26,6 @@ const readConfig = (): IConfig => {
     .addOption(new Option('--rpc-url <rpc-url>'))
     .addOption(
       new Option(
-        '--min-value <min-value>',
-        'Minimum USD value of token to swap'
-      )
-        .default(1000)
-        .argParser((x) => +x)
-    )
-    .addOption(
-      new Option(
         '--max-orders <max-orders>',
         'Maximum number of orders to place in single drip call'
       )
@@ -44,48 +39,106 @@ const readConfig = (): IConfig => {
       )
         .default(0.02)
         .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--buy-amount-slippage-bps <buy-amount-slippage-bps>',
+        'Tolerance to add to the quoted buyAmount'
+      )
+        .default(100)
+        .argParser((x) => +x)
+    )
+    .addOption(new Option('--module <module>', 'COWFeeModule address'))
+    .addOption(
+      new Option(
+        '--token-list-strategy <strategy>',
+        'Strategy to use to get the list of tokens to swap on'
+      )
+        .choices(['explorer', 'chain'] as const)
+        .default('explorer' as 'explorer' | 'chain')
+    )
+    .addOption(
+      new Option(
+        '--lookback-range <n>',
+        'Last <n> number of blocks to check the `Trade` events for'
+      )
+        .default(1000)
+        .argParser((x) => +x)
     );
   program.parse();
 
   const options = program.opts();
 
-  const { network: selectedNetwork, maxOrders, minValue, minOut } = options;
+  const {
+    network: selectedNetwork,
+    maxOrders,
+    minOut,
+    buyAmountSlippageBps,
+    module: selectedModule,
+    lookbackRange,
+    tokenListStrategy,
+  } = options;
   const network = selectedNetwork || 'mainnet';
 
-  const {
-    rpcUrl: defaultRpcUrl,
-    module,
-    gpv2Settlement,
-    vaultRelayer,
-    buyToken,
-    buyTokenDecimals,
-    receiver,
-  } = networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
+  const { rpcUrl: defaultRpcUrl, module: defaultModule } =
+    networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const rpcUrl = options.rpcUrl || defaultRpcUrl;
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+  const module = selectedModule || defaultModule;
 
-  return {
-    privateKey,
-    options,
-    maxOrders,
-    minValue,
-    module,
-    gpv2Settlement,
-    vaultRelayer,
-    rpcUrl,
-    network,
-    buyToken,
-    minOut,
-    receiver,
-    buyTokenDecimals,
-  };
+  const moduleContract = new ethers.Contract(module, moduleAbi, provider);
+  const [receiver, toToken, vaultRelayer, gpv2Settlement, keeper, appData] =
+    await Promise.all([
+      moduleContract.receiver(),
+      moduleContract.toToken(),
+      moduleContract.vaultRelayer(),
+      moduleContract.settlement(),
+      moduleContract.keeper(),
+      moduleContract.appData(),
+    ]);
+  if (
+    (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
+    keeper.toLowerCase()
+  ) {
+    throw new Error('Keeper key mismatch');
+  }
+
+  const toTokenDecimals = await new ethers.Contract(
+    toToken,
+    erc20Abi,
+    provider
+  ).decimals();
+
+  return [
+    {
+      privateKey,
+      options,
+      maxOrders,
+      module,
+      gpv2Settlement,
+      vaultRelayer,
+      rpcUrl,
+      network,
+      buyToken: toToken,
+      minOut,
+      receiver,
+      buyTokenDecimals: toTokenDecimals,
+      buyAmountSlippageBps,
+      keeper,
+      appData,
+      tokenListStrategy,
+      lookbackRange,
+    },
+    provider,
+  ];
 };
 
 export const dripItAll = async () => {
   // await getAppData().then(console.log);
 
-  const config = readConfig();
+  const [config, provider] = await readConfig();
   console.log(config.options);
-  const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+  // return;
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
@@ -95,8 +148,6 @@ export const dripItAll = async () => {
       token.symbol,
       token.address,
       formatUnits(token.balance, token.decimals),
-      token.rate,
-      token.usdValue,
       token.tokenOut,
       token.needsApproval,
     ])

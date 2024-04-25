@@ -47,9 +47,38 @@ export const erc20Abi = [
     stateMutability: 'view',
     type: 'function',
   },
+  {
+    constant: true,
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint8' }],
+    payable: false,
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
 ];
 
 export const moduleAbi = [
+  {
+    type: 'function',
+    name: 'appData',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+  },
   {
     type: 'function',
     name: 'approve',
@@ -68,6 +97,11 @@ export const moduleAbi = [
     name: 'drip',
     inputs: [
       {
+        name: '_approveTokens',
+        type: 'address[]',
+        internalType: 'address[]',
+      },
+      {
         name: '_swapTokens',
         type: 'tuple[]',
         internalType: 'struct COWFeeModule.SwapToken[]',
@@ -79,6 +113,11 @@ export const moduleAbi = [
           },
           {
             name: 'sellAmount',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+          {
+            name: 'buyAmount',
             type: 'uint256',
             internalType: 'uint256',
           },
@@ -100,5 +139,132 @@ export const moduleAbi = [
       },
     ],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'receiver',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract ISafe',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'toToken',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'keeper',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'settlement',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'contract IGPv2Settlement',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'vaultRelayer',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    stateMutability: 'view',
+  },
+];
+
+export const settlementAbi = [
+  {
+    inputs: [],
+    name: 'vaultRelayer',
+    outputs: [
+      { internalType: 'contract GPv2VaultRelayer', name: '', type: 'address' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  { stateMutability: 'payable', type: 'receive' },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'owner',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'contract IERC20',
+        name: 'sellToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'contract IERC20',
+        name: 'buyToken',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'sellAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'buyAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'feeAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'bytes',
+        name: 'orderUid',
+        type: 'bytes',
+      },
+    ],
+    name: 'Trade',
+    type: 'event',
   },
 ];

@@ -47,4 +47,6 @@ interface IGPv2Settlement {
     function setPreSignature(bytes calldata orderUid, bool signed) external;
 
     function domainSeparator() external view returns (bytes32);
+
+    function vaultRelayer() external view returns (address);
 }
