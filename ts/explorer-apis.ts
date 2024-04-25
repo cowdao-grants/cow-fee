@@ -133,30 +133,12 @@ export const getTokenInfosFromChain = async (
       x.toLowerCase() !==
       '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
   );
-  const orderbookApi = getOrderbookApi(config);
-  const naitvePrices = await Promise.allSettled(
-    allTokens.map((token) => orderbookApi.getNativePrice(token))
-  );
 
-  const multiplier = config.network === 'gnosis' ? 1 : await getEthPrice();
   const allDecimals = await getDecimals(provider, allTokens);
-
   const allTokenInfo: ITokenInfo[] = allTokens.map((token, idx) => {
-    const nativePriceResponse = naitvePrices[idx];
-    let price: number = 0;
     const decimals = allDecimals[idx];
-    const denominator = 10 ** (18 - decimals);
-
-    if (nativePriceResponse.status === 'fulfilled') {
-      price =
-        ((nativePriceResponse.value.price || 0) * multiplier) / denominator;
-    } else {
-      // console.log('failure', token, nativePriceResponse.reason);
-    }
-
     return {
       address: token,
-      rate: price,
       decimals,
       symbol: '',
     };
