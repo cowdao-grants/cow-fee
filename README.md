@@ -73,3 +73,41 @@ docker run --rm \
   --token-list-strategy explorer \
   --lookback-range 1000
 ```
+
+### module-ops
+
+```
+Usage: module-ops [options] [command]
+
+Options:
+  --network <network>       Network (choices: "gnosis", "mainnet", default: "mainnet")
+  --safe <safe>             Safe address
+  --module <module>         Module address
+  -h, --help                display help for command
+
+Commands:
+  enable-module
+  disable-module [options]
+  help [command]            display help for command
+```
+
+#### Enable module
+
+```
+yarn ts-node module-ops.ts \
+  --network mainnet \
+  --safe <safe> \
+  --module <module> \
+  enable-module
+```
+
+#### Disable Module
+
+```
+yarn ts-node module-ops.ts \
+  --network mainnet \
+  --safe <safe> \
+  --module <module> \
+  disable-module \
+  --previous-module <prev-module>
+```
