@@ -124,9 +124,4 @@ use this calldata to send a transaction from a safe to itself to enable the modu
 
 #### Disable module
 
-```
-cast calldata "disableModule(address,address)" <previous-module> <module-to-disable>
-```
-
-use this calldata to send a transaction from a safe to itself to disable the module on that safe.
-Or, use the safe UI settings page to disable the module if you do not know the address of `<previous-module>`
+Use the safe UI settings page to disable the module.
