@@ -23,6 +23,29 @@ There are additional methods:
 
 ## Usage
 
+### Contract
+
+Set the following env vars:
+
+```
+RECEIVER
+TO_TOKEN
+KEEPER
+SETTLEMENT
+APP_DATA
+SHOULD_ENABLE_MODULE
+```
+
+Then run the script to deploy the module:
+
+```
+forge script ./script/COWFeeModule.s.sol \
+  --rpc-url <rpc> \
+  --broadcast
+```
+
+### Keeper
+
 Private key for keeper needs to set with `PRIVATE_KEY` environment
 variable.
 
@@ -41,7 +64,7 @@ Options:
   -h, --help                                           display help for command
 ```
 
-### Directly
+#### Directly
 
 ```sh
 yarn ts-node index.ts \
@@ -55,7 +78,7 @@ yarn ts-node index.ts \
   --lookback-range 1000
 ```
 
-### Docker
+#### Docker
 
 ```sh
 # build the docker file
@@ -73,3 +96,17 @@ docker run --rm \
   --token-list-strategy explorer \
   --lookback-range 1000
 ```
+
+### Module operations with cast
+
+#### Enable module
+
+```
+cast calldata "enableModule(address)" <module-address>
+```
+
+use this calldata to send a transaction from a safe to itself to enable the module on that safe.
+
+#### Disable module
+
+Use the safe UI settings page to disable the module.
