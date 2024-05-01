@@ -155,6 +155,13 @@ export const moduleAbi = [
   },
   {
     type: 'function',
+    name: 'targetSafe',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'contract ISafe' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'toToken',
     inputs: [],
     outputs: [
