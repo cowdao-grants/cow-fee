@@ -26,6 +26,7 @@ export interface IConfig {
   network: keyof typeof networkSpecificConfigs;
   buyToken: string;
   minOut: number;
+  targetSafe: string;
   receiver: string;
   buyTokenDecimals: number;
   buyAmountSlippageBps: number;

@@ -24,9 +24,10 @@ contract COWFeeModuleTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
     address vaultRelayer;
+    address receiver = makeAddr("receiver");
 
     function setUp() external {
-        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0));
+        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0), receiver);
         vaultRelayer = module.vaultRelayer();
         mockToken = new MockERC20();
 
@@ -95,7 +96,7 @@ contract COWFeeModuleTest is Test {
             GPv2Order.Data({
                 sellToken: IERC20(address(mockToken)),
                 buyToken: IERC20(WETH),
-                receiver: targetSafe,
+                receiver: receiver,
                 sellAmount: 100 ether,
                 buyAmount: 1,
                 validTo: nextValidTo,
