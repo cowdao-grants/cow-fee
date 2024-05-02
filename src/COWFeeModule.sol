@@ -10,13 +10,14 @@ contract COWFeeModule {
     error OnlyKeeper();
 
     // not public to save deployment costs
-    ISafe public immutable receiver;
+    ISafe public immutable targetSafe;
     address public immutable toToken;
     address public immutable keeper;
     bytes32 public immutable domainSeparator;
     bytes32 public immutable appData;
     IGPv2Settlement public immutable settlement;
     address public immutable vaultRelayer;
+    address public immutable receiver;
 
     struct Revocation {
         address token;
@@ -36,14 +37,22 @@ contract COWFeeModule {
         _;
     }
 
-    constructor(address _settlement, address _receiver, address _toToken, address _keeper, bytes32 _appData) {
+    constructor(
+        address _settlement,
+        address _targetSafe,
+        address _toToken,
+        address _keeper,
+        bytes32 _appData,
+        address _receiver
+    ) {
         settlement = IGPv2Settlement(_settlement);
         vaultRelayer = settlement.vaultRelayer();
-        receiver = ISafe(_receiver);
+        targetSafe = ISafe(_targetSafe);
         toToken = _toToken;
         keeper = _keeper;
         domainSeparator = settlement.domainSeparator();
         appData = _appData;
+        receiver = _receiver;
     }
 
     /// @notice Approve given tokens of settlement contract to vault relayer
@@ -81,7 +90,7 @@ contract COWFeeModule {
         GPv2Order.Data memory order = GPv2Order.Data({
             sellToken: IERC20(address(0)),
             buyToken: IERC20(toToken),
-            receiver: address(receiver),
+            receiver: receiver,
             sellAmount: 0,
             buyAmount: 0,
             validTo: nextValidTo(),
@@ -143,7 +152,7 @@ contract COWFeeModule {
 
     function _execFromModule(address _to, bytes memory _cd) internal returns (bytes memory) {
         (bool success, bytes memory returnData) =
-            receiver.execTransactionFromModuleReturnData(_to, 0, _cd, ISafe.Operation.Call);
+            targetSafe.execTransactionFromModuleReturnData(_to, 0, _cd, ISafe.Operation.Call);
         if (!success) {
             assembly ("memory-safe") {
                 revert(add(returnData, 0x20), mload(returnData))

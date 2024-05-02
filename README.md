@@ -110,3 +110,9 @@ use this calldata to send a transaction from a safe to itself to enable the modu
 #### Disable module
 
 Use the safe UI settings page to disable the module.
+
+### Tests
+
+```
+$ forge test -vvv --rpc-url https://eth.llamarpc.com
+```

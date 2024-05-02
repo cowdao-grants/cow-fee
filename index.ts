@@ -87,15 +87,23 @@ const readConfig = async (): Promise<
   const module = selectedModule || defaultModule;
 
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
-  const [receiver, toToken, vaultRelayer, gpv2Settlement, keeper, appData] =
-    await Promise.all([
-      moduleContract.receiver(),
-      moduleContract.toToken(),
-      moduleContract.vaultRelayer(),
-      moduleContract.settlement(),
-      moduleContract.keeper(),
-      moduleContract.appData(),
-    ]);
+  const [
+    receiver,
+    toToken,
+    vaultRelayer,
+    gpv2Settlement,
+    keeper,
+    appData,
+    targetSafe,
+  ] = await Promise.all([
+    moduleContract.receiver(),
+    moduleContract.toToken(),
+    moduleContract.vaultRelayer(),
+    moduleContract.settlement(),
+    moduleContract.keeper(),
+    moduleContract.appData(),
+    moduleContract.targetSafe(),
+  ]);
   if (
     (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
     keeper.toLowerCase()
@@ -128,6 +136,7 @@ const readConfig = async (): Promise<
       appData,
       tokenListStrategy,
       lookbackRange,
+      targetSafe,
     },
     provider,
   ];
