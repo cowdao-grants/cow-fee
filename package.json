@@ -5,7 +5,9 @@
     "@cowprotocol/cow-sdk": "^5.2.0",
     "axios": "^1.6.8",
     "commander": "^12.0.0",
-    "ethers": "v5"
+    "ethers": "v5",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0"
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",

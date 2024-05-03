@@ -1,7 +1,12 @@
 import { ethers } from 'ethers';
 import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
-import { IConfig, networkSpecificConfigs } from './ts/common';
+import {
+  IConfig,
+  getLogger,
+  logMemory,
+  networkSpecificConfigs,
+} from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
 import { erc20Abi, moduleAbi, settlementAbi } from './ts/abi';
 
@@ -56,6 +61,11 @@ const readConfig = async (): Promise<
       )
         .default(1000)
         .argParser((x) => +x)
+    )
+    .addOption(
+      new Option('--multicall-size <n>', 'max number of calls in a multicall')
+        .default(100)
+        .argParser((x) => +x)
     );
   program.parse();
 
@@ -68,6 +78,7 @@ const readConfig = async (): Promise<
     module: selectedModule,
     lookbackRange,
     tokenListStrategy,
+    multicallSize,
   } = options;
   const network = selectedNetwork || 'mainnet';
 

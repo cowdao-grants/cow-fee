@@ -1,6 +1,7 @@
 import { OrderBookApi, SupportedChainId } from '@cowprotocol/cow-sdk';
 import { ethers } from 'ethers';
 import { multicall3Abi } from './abi';
+import pino from 'pino';
 
 export const networkSpecificConfigs = {
   mainnet: {
@@ -33,6 +34,7 @@ export interface IConfig {
   appData: string;
   tokenListStrategy: 'explorer' | 'chain';
   lookbackRange: number;
+  multicallSize: number;
 }
 
 const toChainId = (network: keyof typeof networkSpecificConfigs) => {
@@ -70,4 +72,30 @@ export const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
     multicall3Abi,
     provider
   );
+};
+
+export const chunkedMulticall = async (
+  provider: ethers.providers.JsonRpcProvider,
+  calls: { target: string; callData: string }[],
+  chunkSize: number
+) => {
+  const mcall = getMulticall3(provider);
+  const nChunks = Math.ceil(calls.length / chunkSize);
+  const ret = [];
+  for (let i = 0; i < nChunks; i++) {
+    const start = i * chunkSize;
+    const end = start + chunkSize;
+    const chunk = calls.slice(start, end);
+    ret.push(...(await mcall.tryAggregate(false, chunk)));
+  }
+  return ret;
+};
+
+const logger = pino();
+export const getLogger = (name: string) => {
+  return logger.child({ name });
+};
+
+export const logMemory = () => {
+  logger.info(process.memoryUsage(), 'memory snapshot');
 };

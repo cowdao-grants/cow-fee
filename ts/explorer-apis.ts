@@ -1,7 +1,15 @@
 import axios from 'axios';
-import { IConfig, getMulticall3, getOrderbookApi } from './common';
+import {
+  IConfig,
+  chunkedMulticall,
+  getLogger,
+  getMulticall3,
+  getOrderbookApi,
+} from './common';
 import { BigNumber, ethers } from 'ethers';
 import { erc20Abi, settlementAbi } from './abi';
+
+const logger = getLogger('explorer-apis');
 
 interface ITokenInfo {
   address: string;
@@ -26,6 +34,7 @@ interface IEthplorerResponse {
 const getTokenInfosFromEthPlorer = async (
   address: string
 ): Promise<ITokenInfo[]> => {
+  logger.info('getting token info with ethplorer api');
   const { data } = await axios.get<IEthplorerResponse>(
     `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`
   );
@@ -52,6 +61,7 @@ interface IBlockscoutResponse {
 const getTokenInfosFromBlockscout = async (
   address: string
 ): Promise<ITokenInfo[]> => {
+  logger.info('get token info with blockscout api');
   const { data } = await axios.get<IBlockscoutResponse[]>(
     `https://gnosis.blockscout.com/api/v2/addresses/${address}/token-balances`
   );
@@ -85,7 +95,8 @@ const ABI_CODER = new ethers.utils.AbiCoder();
 
 const getDecimals = async (
   provider: ethers.providers.JsonRpcProvider,
-  tokens: string[]
+  tokens: string[],
+  multicallSize: number
 ): Promise<number[]> => {
   const Multicall3 = getMulticall3(provider);
   const decimalsCalldata = new ethers.utils.Interface(
@@ -95,14 +106,14 @@ const getDecimals = async (
     target: token,
     callData: decimalsCalldata,
   }));
-  const decimalsRet = await Multicall3.tryAggregate(false, cds);
+  const decimalsRet = await chunkedMulticall(provider, cds, multicallSize);
   const decimals = decimalsRet.map((r: any, idx: number) => {
     if (!r.success) return 0;
 
     try {
       return ABI_CODER.decode(['uint8'], r.returnData)[0];
     } catch (err) {
-      console.log('errror decoding', r.returnData, tokens[idx]);
+      logger.info('errror decoding', r.returnData, tokens[idx]);
     }
   }) as number[];
   return decimals;
@@ -111,6 +122,7 @@ const getDecimals = async (
 export const getTokenInfosFromChain = async (
   config: IConfig
 ): Promise<ITokenInfo[]> => {
+  logger.info('getting token info from chain');
   const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
   const settlement = new ethers.Contract(
     config.gpv2Settlement,
@@ -119,11 +131,14 @@ export const getTokenInfosFromChain = async (
   );
   const tradeFilter = settlement.filters.Trade();
   const currentBlock = await provider.getBlockNumber();
+  const fromBlock = currentBlock - config.lookbackRange;
+  logger.info(`querying trades from ${fromBlock} to ${currentBlock}`);
   const logs = await settlement.queryFilter(
     tradeFilter,
     currentBlock - config.lookbackRange,
     currentBlock
   );
+  logger.info(`Found ${logs.length} trades`);
   const allTokens = Array.from(
     new Set(
       logs.map((log) => [log.args!.sellToken, log.args!.buyToken]).flat()
@@ -133,8 +148,14 @@ export const getTokenInfosFromChain = async (
       x.toLowerCase() !==
       '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
   );
+  logger.info(`Found ${allTokens.length} unique tokens`);
 
-  const allDecimals = await getDecimals(provider, allTokens);
+  logger.info(`Getting decimals for ${allTokens.length} tokens`);
+  const allDecimals = await getDecimals(
+    provider,
+    allTokens,
+    config.multicallSize
+  );
   const allTokenInfo: ITokenInfo[] = allTokens.map((token, idx) => {
     const decimals = allDecimals[idx];
     return {

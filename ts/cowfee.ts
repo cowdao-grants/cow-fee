@@ -1,8 +1,11 @@
 import { BigNumber, ContractTransaction, ethers } from 'ethers';
 import {
   IConfig,
+  chunkedMulticall,
+  getLogger,
   getMulticall3,
   getOrderbookApi,
+  logMemory,
   networkSpecificConfigs,
 } from './common';
 import { getTokenBalances } from './explorer-apis';
@@ -20,12 +23,14 @@ import {
 } from '@cowprotocol/cow-sdk';
 import { MetadataApi } from '@cowprotocol/app-data';
 
+const logger = getLogger('cowfee');
 const ABI_CODER = new ethers.utils.AbiCoder();
 
 const getBalances = async (
   provider: ethers.providers.JsonRpcProvider,
   address: string,
-  tokens: string[]
+  tokens: string[],
+  multicallSize: number
 ): Promise<BigNumber[]> => {
   const Multicall3 = getMulticall3(provider);
   const balanceOfCalldata = new ethers.utils.Interface(
@@ -35,7 +40,7 @@ const getBalances = async (
     target: token,
     callData: balanceOfCalldata,
   }));
-  const balancesRet = await Multicall3.tryAggregate(false, cds);
+  const balancesRet = await chunkedMulticall(provider, cds, multicallSize);
   const balances = balancesRet.map((r: any) =>
     r.success ? ABI_CODER.decode(['uint'], r.returnData)[0] : BigNumber.from(0)
   ) as BigNumber[];
@@ -46,18 +51,20 @@ const getAllowances = async (
   provider: ethers.providers.JsonRpcProvider,
   owner: string,
   spender: string,
-  tokens: string[]
+  tokens: string[],
+  multicallSize: number
 ): Promise<BigNumber[]> => {
   const Multicall3 = getMulticall3(provider);
   const allowanceCalldata = new ethers.utils.Interface(
     erc20Abi
   ).encodeFunctionData('allowance', [owner, spender]);
-  const allowancesRet = await Multicall3.tryAggregate(
-    false,
+  const allowancesRet = await chunkedMulticall(
+    provider,
     tokens.map((token) => ({
       target: token,
       callData: allowanceCalldata,
-    }))
+    })),
+    multicallSize
   );
   const allowances = allowancesRet.map((r: any) =>
     r.success ? ABI_CODER.decode(['uint'], r.returnData)[0] : BigNumber.from(0)
@@ -69,24 +76,38 @@ export const getTokensToSwap = async (
   config: IConfig,
   provider: ethers.providers.JsonRpcProvider
 ) => {
+  logMemory();
   const unfiltered = await getTokenBalances(
     config.gpv2Settlement,
     config.network,
     config.tokenListStrategy,
     config
   );
+  logMemory();
 
   // populate the balances and allowances
   const tokenAddresses = unfiltered.map((token) => token.address);
+  logger.info(
+    `Getting token balances and allowances for ${tokenAddresses.length} tokens`
+  );
   const [balances, allowances] = await Promise.all([
-    getBalances(provider, config.gpv2Settlement, tokenAddresses),
+    getBalances(
+      provider,
+      config.gpv2Settlement,
+      tokenAddresses,
+      config.multicallSize
+    ),
     getAllowances(
       provider,
       config.gpv2Settlement,
       config.vaultRelayer,
-      tokenAddresses
+      tokenAddresses,
+      config.multicallSize
     ),
   ]);
+  logger.info('got balances and allowances');
+  logMemory();
+
   // minValue filter again with _real_ balance
   const unfilteredWithBalanceAndAllowance = unfiltered.map((token, idx) => ({
     ...token,
@@ -95,6 +116,11 @@ export const getTokensToSwap = async (
     needsApproval: allowances[idx].lt(balances[idx]),
   }));
 
+  logMemory();
+
+  logger.info(
+    `Getting quotes for ${unfilteredWithBalanceAndAllowance.length} tokens`
+  );
   // filter shitcoins with no liquidity by using the quotes api
   const orderBookApi = getOrderbookApi(config);
   const quotes = await Promise.allSettled(
@@ -196,17 +222,17 @@ export const swapTokens = async (
       })
     )
   );
-  console.log(
-    'failed',
+  logger.info(
     orders
       .filter((x) => x.status === 'rejected')
-      .map((x) => (x as PromiseRejectedResult).reason)
+      .map((x) => (x as PromiseRejectedResult).reason),
+    'failed orders'
   );
-  console.log(
-    'orderIds',
+  logger.info(
     orders
       .filter((x) => x.status === 'fulfilled')
-      .map((x) => (x as PromiseFulfilledResult<string>).value)
+      .map((x) => (x as PromiseFulfilledResult<string>).value),
+    'orderIds'
   );
   // only execute drip for successfully created orders
   const toActuallySwap = toSwap.filter(
@@ -232,7 +258,7 @@ export const swapTokens = async (
     toApprove,
     toDrip
   );
-  console.log('dripTx', dripTx.hash);
+  logger.info(dripTx.hash, 'dripTx');
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)
     throw new Error(`drip failed: ${dripTxReceipt.transactionHash}`);
