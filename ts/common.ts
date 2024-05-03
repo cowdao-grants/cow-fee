@@ -92,7 +92,7 @@ export const chunkedMulticall = async (
 
 const logger = pino();
 export const getLogger = (name: string) => {
-  return logger.child({ name });
+  return logger.child({ name, level: process.env.LOG_LEVEL || 'info' });
 };
 
 export const logMemory = () => {
