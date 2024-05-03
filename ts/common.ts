@@ -32,7 +32,6 @@ export interface IConfig {
   buyAmountSlippageBps: number;
   keeper: string;
   appData: string;
-  tokenListStrategy: 'explorer' | 'chain';
   lookbackRange: number;
   multicallSize: number;
 }
@@ -97,5 +96,5 @@ export const getLogger = (name: string) => {
 };
 
 export const logMemory = () => {
-  logger.info(process.memoryUsage(), 'memory snapshot');
+  logger.debug(process.memoryUsage(), 'memory snapshot');
 };

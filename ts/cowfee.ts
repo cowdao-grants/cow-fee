@@ -77,12 +77,7 @@ export const getTokensToSwap = async (
   provider: ethers.providers.JsonRpcProvider
 ) => {
   logMemory();
-  const unfiltered = await getTokenBalances(
-    config.gpv2Settlement,
-    config.network,
-    config.tokenListStrategy,
-    config
-  );
+  const unfiltered = await getTokenBalances(config);
   logMemory();
 
   // populate the balances and allowances

@@ -48,14 +48,6 @@ const readConfig = async (): Promise<
     .addOption(new Option('--module <module>', 'COWFeeModule address'))
     .addOption(
       new Option(
-        '--token-list-strategy <strategy>',
-        'Strategy to use to get the list of tokens to swap on'
-      )
-        .choices(['explorer', 'chain'] as const)
-        .default('explorer' as 'explorer' | 'chain')
-    )
-    .addOption(
-      new Option(
         '--lookback-range <n>',
         'Last <n> number of blocks to check the `Trade` events for'
       )
@@ -77,7 +69,6 @@ const readConfig = async (): Promise<
     buyAmountSlippageBps,
     module: selectedModule,
     lookbackRange,
-    tokenListStrategy,
     multicallSize,
   } = options;
   const network = selectedNetwork || 'mainnet';
@@ -131,34 +122,40 @@ const readConfig = async (): Promise<
       buyAmountSlippageBps,
       keeper,
       appData,
-      tokenListStrategy,
       lookbackRange,
       targetSafe,
+      multicallSize,
     },
     provider,
   ];
 };
 
+const logger = getLogger('index');
+
 export const dripItAll = async () => {
   // await getAppData().then(console.log);
 
   const [config, provider] = await readConfig();
-  console.log(config.options);
+  logger.info(config.options, 'config options');
   // return;
   const signer = new ethers.Wallet(config.privateKey, provider);
 
+  logMemory();
+
+  process.on('warning', (e) => console.warn(e.stack));
   const tokensToSwap = await getTokensToSwap(config, provider);
-  console.log(
-    'tokensToSwap',
+  logger.info(
     tokensToSwap.map((token) => [
       token.symbol,
       token.address,
       formatUnits(token.balance, token.decimals),
       token.buyAmount,
       token.needsApproval,
-    ])
+    ]),
+    'tokensToSwap'
   );
 
+  logMemory();
   for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {
     const toSwap = tokensToSwap.slice(i, i + config.maxOrders);
     try {
