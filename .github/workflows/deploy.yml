@@ -33,7 +33,5 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref }}
-            ghcr.io/${{ github.repository }}:latest
           labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
