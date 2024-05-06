@@ -82,9 +82,7 @@ export const chunkedMulticall = async (
   const nChunks = Math.ceil(calls.length / chunkSize);
   const ret = [];
   for (let i = 0; i < nChunks; i++) {
-    const start = i * chunkSize;
-    const end = start + chunkSize;
-    const chunk = calls.slice(start, end);
+    const chunk = calls.slice(i * chunkSize, (i + 1) * chunkSize);
     ret.push(...(await mcall.tryAggregate(false, chunk)));
   }
   return ret;
@@ -93,8 +91,4 @@ export const chunkedMulticall = async (
 const logger = pino();
 export const getLogger = (name: string) => {
   return logger.child({ name, level: process.env.LOG_LEVEL || 'info' });
-};
-
-export const logMemory = () => {
-  logger.debug(process.memoryUsage(), 'memory snapshot');
 };

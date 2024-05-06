@@ -5,10 +5,9 @@ import {
   getLogger,
   getMulticall3,
   getOrderbookApi,
-  logMemory,
   networkSpecificConfigs,
 } from './common';
-import { getTokenBalances } from './explorer-apis';
+import { getTokenBalances } from './token-fetcher';
 import { multicall3Abi, erc20Abi, moduleAbi } from './abi';
 import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
 import {
@@ -76,9 +75,7 @@ export const getTokensToSwap = async (
   config: IConfig,
   provider: ethers.providers.JsonRpcProvider
 ) => {
-  logMemory();
   const unfiltered = await getTokenBalances(config);
-  logMemory();
 
   // populate the balances and allowances
   const tokenAddresses = unfiltered.map((token) => token.address);
@@ -101,7 +98,6 @@ export const getTokensToSwap = async (
     ),
   ]);
   logger.info('got balances and allowances');
-  logMemory();
 
   // minValue filter again with _real_ balance
   const unfilteredWithBalanceAndAllowance = unfiltered.map((token, idx) => ({
@@ -111,7 +107,6 @@ export const getTokensToSwap = async (
     needsApproval: allowances[idx].lt(balances[idx]),
   }));
 
-  logMemory();
 
   logger.info(
     `Getting quotes for ${unfilteredWithBalanceAndAllowance.length} tokens`
@@ -140,7 +135,7 @@ export const getTokensToSwap = async (
         (quotes[i].status === 'fulfilled' &&
           (quotes[i] as PromiseFulfilledResult<OrderQuoteResponse>).value.quote
             .buyAmount) ||
-          0
+        0
       )
         .mul(10000 - config.buyAmountSlippageBps)
         .div(10000),

@@ -4,7 +4,6 @@ import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import {
   IConfig,
   getLogger,
-  logMemory,
   networkSpecificConfigs,
 } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
@@ -137,10 +136,7 @@ export const dripItAll = async () => {
 
   const [config, provider] = await readConfig();
   logger.info(config.options, 'config options');
-  // return;
   const signer = new ethers.Wallet(config.privateKey, provider);
-
-  logMemory();
 
   process.on('warning', (e) => console.warn(e.stack));
   const tokensToSwap = await getTokensToSwap(config, provider);
@@ -155,7 +151,6 @@ export const dripItAll = async () => {
     'tokensToSwap'
   );
 
-  logMemory();
   for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {
     const toSwap = tokensToSwap.slice(i, i + config.maxOrders);
     try {
