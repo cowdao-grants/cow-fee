@@ -25,7 +25,7 @@ export interface IConfig {
   rpcUrl: string;
   network: keyof typeof networkSpecificConfigs;
   buyToken: string;
-  minOut: number;
+  minOut: bigint;
   targetSafe: string;
   receiver: string;
   buyTokenDecimals: number;

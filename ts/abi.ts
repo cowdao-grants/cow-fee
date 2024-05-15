@@ -212,6 +212,19 @@ export const moduleAbi = [
     ],
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'minOut',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
 ];
 
 export const settlementAbi = [

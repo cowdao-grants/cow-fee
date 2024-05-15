@@ -115,16 +115,14 @@ export const getTokensToSwap = async (
         (quotes[i].status === 'fulfilled' &&
           (quotes[i] as PromiseFulfilledResult<OrderQuoteResponse>).value.quote
             .buyAmount) ||
-          0
+        0
       ),
     }))
     .filter((_, i) => quotes[i].status === 'fulfilled');
 
   // filter by min eth out
-  // const minOut = parseEther(config.minOut.toString());
-  const minOut = parseUnits(config.minOut.toString(), config.buyTokenDecimals);
   const minOutFiltered = quotesFiltered.filter((token) =>
-    BigNumber.from(token.tokenOut).gt(minOut)
+    BigNumber.from(token.tokenOut).gt(config.minOut)
   );
   return minOutFiltered;
 };

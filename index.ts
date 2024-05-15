@@ -72,7 +72,6 @@ const readConfig = async (): Promise<
   const {
     network: selectedNetwork,
     maxOrders,
-    minOut,
     buyAmountSlippageBps,
     module: selectedModule,
     lookbackRange,
@@ -95,6 +94,7 @@ const readConfig = async (): Promise<
     keeper,
     appData,
     targetSafe,
+    minOut,
   ] = await Promise.all([
     moduleContract.receiver(),
     moduleContract.toToken(),
@@ -103,6 +103,7 @@ const readConfig = async (): Promise<
     moduleContract.keeper(),
     moduleContract.appData(),
     moduleContract.targetSafe(),
+    moduleContract.minOut(),
   ]);
   if (
     (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
