@@ -162,15 +162,19 @@ export const swapTokens = async (
     throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
   }
 
-  const toSwapWithBuyAmount = toSwap.map((token) => {
-    const buyAmount = token.tokenOut
-      .mul(10000 - config.buyAmountSlippageBps)
-      .div(10000);
-    return {
-      ...token,
-      buyAmount: buyAmount.eq(0) ? BigNumber.from(1) : buyAmount,
-    };
-  });
+  const toSwapWithBuyAmount = toSwap
+    .map((token) => {
+      const buyAmount = token.tokenOut
+        .mul(10000 - config.buyAmountSlippageBps)
+        .div(10000);
+      return {
+        ...token,
+        buyAmount: buyAmount.eq(0) ? BigNumber.from(1) : buyAmount,
+      };
+    })
+    .filter((token) => {
+      return token.buyAmount.gt(config.minOut);
+    });
 
   // create orders
   const orders = await Promise.allSettled(
