@@ -25,9 +25,10 @@ contract COWFeeModuleTest is Test {
     IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
     address vaultRelayer;
     address receiver = makeAddr("receiver");
+    uint256 minOut = 0.01 ether;
 
     function setUp() external {
-        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0), receiver);
+        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0), receiver, minOut);
         vaultRelayer = module.vaultRelayer();
         mockToken = new MockERC20();
 
@@ -143,5 +144,25 @@ contract COWFeeModuleTest is Test {
         assertEq(owner, address(settlement), "owner not settlement");
         assertEq(signed, true, "not signed");
         assertEq(orderUid, preSignature, "orderUid not correct");
+    }
+
+    function testDripMinOut() external {
+        deal(address(mockToken), address(settlement), 100 ether);
+
+        uint256 sellAmount = 100 ether;
+        uint256 buyAmount = 0.001 ether;
+
+        COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
+        swapTokens[0] =
+            COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: buyAmount, sellAmount: sellAmount });
+
+        address[] memory approveTokens = new address[](1);
+        approveTokens[0] = address(mockToken);
+        uint256 previousAllowance = mockToken.allowance(address(settlement), vaultRelayer);
+        assertEq(previousAllowance, 0, "previousAllowance not 0");
+
+        vm.prank(keeper);
+        vm.expectRevert(COWFeeModule.BuyAmountTooSmall.selector);
+        module.drip(approveTokens, swapTokens);
     }
 }
