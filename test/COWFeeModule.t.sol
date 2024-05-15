@@ -99,7 +99,7 @@ contract COWFeeModuleTest is Test {
                 buyToken: IERC20(WETH),
                 receiver: receiver,
                 sellAmount: 100 ether,
-                buyAmount: 1,
+                buyAmount: minOut,
                 validTo: nextValidTo,
                 appData: bytes32(0),
                 feeAmount: 0,
@@ -113,7 +113,7 @@ contract COWFeeModuleTest is Test {
         bytes memory preSignature = abi.encodePacked(orderHash, address(settlement), nextValidTo);
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
-        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: 1, sellAmount: 100 ether });
+        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: minOut, sellAmount: 100 ether });
 
         address[] memory approveTokens = new address[](1);
         approveTokens[0] = address(mockToken);
