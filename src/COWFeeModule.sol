@@ -57,7 +57,10 @@ contract COWFeeModule {
 
     /// @notice Approve given tokens of settlement contract to vault relayer
     function approve(address[] calldata _tokens) external onlyKeeper {
-        _approve(_tokens);
+        IGPv2Settlement.InteractionData[] memory approveInteractions =
+            new IGPv2Settlement.InteractionData[](_tokens.length);
+        _approveInteractions(_tokens, approveInteractions);
+        _execInteractions(approveInteractions);
     }
 
     /// @notice Revoke approvals for given tokens to given contracts
@@ -82,10 +85,9 @@ contract COWFeeModule {
     /// @notice Commit presignatures for sell orders of given tokens of given amounts.
     ///         Optionally, also approve the tokens to be spent to the vault relayer.
     function drip(address[] calldata _approveTokens, SwapToken[] calldata _swapTokens) external onlyKeeper {
-        _approve(_approveTokens);
-
-        IGPv2Settlement.InteractionData[] memory dripInteractions =
-            new IGPv2Settlement.InteractionData[](_swapTokens.length);
+        uint256 len = _approveTokens.length + _swapTokens.length;
+        IGPv2Settlement.InteractionData[] memory approveAndDripInteractions = new IGPv2Settlement.InteractionData[](len);
+        _approveInteractions(_approveTokens, approveAndDripInteractions);
 
         GPv2Order.Data memory order = GPv2Order.Data({
             sellToken: IERC20(address(0)),
@@ -102,14 +104,15 @@ contract COWFeeModule {
             buyTokenBalance: GPv2Order.BALANCE_ERC20
         });
 
-        for (uint256 i = 0; i < dripInteractions.length;) {
+        uint256 offset = _approveTokens.length;
+        for (uint256 i = 0; i < _swapTokens.length;) {
             SwapToken calldata swapToken = _swapTokens[i];
             order.sellToken = IERC20(swapToken.token);
             order.sellAmount = swapToken.sellAmount;
             order.buyAmount = swapToken.buyAmount;
             bytes memory preSignature = _computePreSignature(order);
 
-            dripInteractions[i] = IGPv2Settlement.InteractionData({
+            approveAndDripInteractions[i + offset] = IGPv2Settlement.InteractionData({
                 to: address(settlement),
                 value: 0,
                 callData: abi.encodeCall(IGPv2Settlement.setPreSignature, (preSignature, true))
@@ -120,7 +123,7 @@ contract COWFeeModule {
             }
         }
 
-        _execInteractions(dripInteractions);
+        _execInteractions(approveAndDripInteractions);
     }
 
     /// @notice The `validTo` that the orders will be createad with
@@ -130,13 +133,13 @@ contract COWFeeModule {
         return uint32((block.timestamp - remainder) + 2 hours);
     }
 
-    function _approve(address[] calldata _tokens) internal {
-        IGPv2Settlement.InteractionData[] memory approveInteractions =
-            new IGPv2Settlement.InteractionData[](_tokens.length);
-
+    function _approveInteractions(address[] calldata _tokens, IGPv2Settlement.InteractionData[] memory _interactions)
+        internal
+        view
+    {
         for (uint256 i = 0; i < _tokens.length;) {
             address token = _tokens[i];
-            approveInteractions[i] = IGPv2Settlement.InteractionData({
+            _interactions[i] = IGPv2Settlement.InteractionData({
                 to: token,
                 value: 0,
                 callData: abi.encodeCall(IERC20.approve, (vaultRelayer, type(uint256).max))
@@ -146,8 +149,6 @@ contract COWFeeModule {
                 ++i;
             }
         }
-
-        _execInteractions(approveInteractions);
     }
 
     function _execFromModule(address _to, bytes memory _cd) internal returns (bytes memory) {
