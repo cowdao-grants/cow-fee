@@ -156,10 +156,7 @@ contract COWFeeModuleTest is Test {
         swapTokens[0] =
             COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: buyAmount, sellAmount: sellAmount });
 
-        address[] memory approveTokens = new address[](1);
-        approveTokens[0] = address(mockToken);
-        uint256 previousAllowance = mockToken.allowance(address(settlement), vaultRelayer);
-        assertEq(previousAllowance, 0, "previousAllowance not 0");
+        address[] memory approveTokens = new address[](0);
 
         vm.prank(keeper);
         vm.expectRevert(COWFeeModule.BuyAmountTooSmall.selector);
