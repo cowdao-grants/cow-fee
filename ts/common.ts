@@ -28,7 +28,6 @@ export interface IConfig {
   minOut: bigint;
   targetSafe: string;
   receiver: string;
-  buyTokenDecimals: number;
   buyAmountSlippageBps: number;
   keeper: string;
   appData: string;

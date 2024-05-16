@@ -112,12 +112,6 @@ const readConfig = async (): Promise<
     throw new Error('Keeper key mismatch');
   }
 
-  const toTokenDecimals = await new ethers.Contract(
-    toToken,
-    erc20Abi,
-    provider
-  ).decimals();
-
   return [
     {
       privateKey,
@@ -131,7 +125,6 @@ const readConfig = async (): Promise<
       buyToken: toToken,
       minOut,
       receiver,
-      buyTokenDecimals: toTokenDecimals,
       buyAmountSlippageBps,
       keeper,
       appData,

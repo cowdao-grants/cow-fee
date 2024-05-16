@@ -169,7 +169,7 @@ export const swapTokens = async (
         .div(10000);
       return {
         ...token,
-        buyAmount: buyAmount.eq(0) ? BigNumber.from(1) : buyAmount,
+        buyAmount,
       };
     })
     .filter((token) => {
