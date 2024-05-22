@@ -57,6 +57,14 @@ const readConfig = async (): Promise<
       new Option('--multicall-size <n>', 'max number of calls in a multicall')
         .default(100)
         .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--query-logs-size <n>',
+        'max block range to use for eth_queryLogs'
+      )
+        .default(50000)
+        .argParser((x) => +x)
     );
   program.parse();
 
@@ -69,6 +77,7 @@ const readConfig = async (): Promise<
     module: selectedModule,
     lookbackRange,
     multicallSize,
+    queryLogsSize,
   } = options;
   const network = selectedNetwork || 'mainnet';
 
@@ -124,6 +133,7 @@ const readConfig = async (): Promise<
       lookbackRange,
       targetSafe,
       multicallSize,
+      queryLogsSize,
     },
     provider,
   ];

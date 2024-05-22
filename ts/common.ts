@@ -34,6 +34,7 @@ export interface IConfig {
   appData: string;
   lookbackRange: number;
   multicallSize: number;
+  queryLogsSize: number;
 }
 
 const toChainId = (network: keyof typeof networkSpecificConfigs) => {
@@ -84,6 +85,26 @@ export const chunkedMulticall = async (
   for (let i = 0; i < nChunks; i++) {
     const chunk = calls.slice(i * chunkSize, (i + 1) * chunkSize);
     ret.push(...(await mcall.tryAggregate(false, chunk)));
+  }
+  return ret;
+};
+
+export const chunkedQueryFilter = async (
+  contract: ethers.Contract,
+  filter: ethers.EventFilter,
+  fromBlock: number,
+  toBlock: number,
+  chunkSize: number
+) => {
+  const ret = [];
+  for (let i = fromBlock; i <= toBlock; i += chunkSize) {
+    ret.push(
+      ...(await contract.queryFilter(
+        filter,
+        i,
+        Math.min(i + chunkSize - 1, toBlock)
+      ))
+    );
   }
   return ret;
 };

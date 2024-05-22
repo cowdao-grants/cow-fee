@@ -2,6 +2,7 @@ import axios from 'axios';
 import {
   IConfig,
   chunkedMulticall,
+  chunkedQueryFilter,
   getLogger,
   getMulticall3,
   getOrderbookApi,
@@ -9,7 +10,7 @@ import {
 import { BigNumber, ethers } from 'ethers';
 import { erc20Abi, settlementAbi } from './abi';
 
-const logger = getLogger('explorer-apis');
+const logger = getLogger('token-fetcher');
 
 interface ITokenInfo {
   address: string;
@@ -60,10 +61,12 @@ export const getTokenInfosFromChain = async (
   const currentBlock = await provider.getBlockNumber();
   const fromBlock = currentBlock - config.lookbackRange;
   logger.info(`querying trades from ${fromBlock} to ${currentBlock}`);
-  const logs = await settlement.queryFilter(
+  const logs = await chunkedQueryFilter(
+    settlement,
     tradeFilter,
     currentBlock - config.lookbackRange,
-    currentBlock
+    currentBlock,
+    config.queryLogsSize
   );
   logger.info(`Found ${logs.length} trades`);
   const allTokens = Array.from(
