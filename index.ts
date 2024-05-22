@@ -34,14 +34,6 @@ const readConfig = async (): Promise<
     )
     .addOption(
       new Option(
-        '--min-out <min-out>',
-        'Minimum amount of to-token to receive per swap'
-      )
-        .default(0.02)
-        .argParser((x) => +x)
-    )
-    .addOption(
-      new Option(
         '--buy-amount-slippage-bps <buy-amount-slippage-bps>',
         'Tolerance to add to the quoted buyAmount'
       )
@@ -151,7 +143,7 @@ export const dripItAll = async () => {
       token.symbol,
       token.address,
       formatUnits(token.balance, token.decimals),
-      token.tokenOut,
+      token.buyAmount,
       token.needsApproval,
     ])
   );
