@@ -61,7 +61,7 @@ const readConfig = async (): Promise<
     .addOption(
       new Option(
         '--query-logs-size <n>',
-        'max block range to use for eth_queryLogs'
+        'max block range to use for eth_getLogs'
       )
         .default(50000)
         .argParser((x) => +x)
