@@ -108,24 +108,33 @@ export const getTokensToSwap = async (
       })
     )
   );
+  console.log(
+    'total tokens prefilter',
+    unfilteredWithBalanceAndAllowance.length
+  );
   const quotesFiltered = unfilteredWithBalanceAndAllowance
     .map((token, i) => ({
       ...token,
-      tokenOut: BigNumber.from(
+      buyAmount: BigNumber.from(
         (quotes[i].status === 'fulfilled' &&
           (quotes[i] as PromiseFulfilledResult<OrderQuoteResponse>).value.quote
             .buyAmount) ||
           0
-      ),
+      )
+        .mul(10000 - config.buyAmountSlippageBps)
+        .div(10000),
     }))
     .filter((_, i) => quotes[i].status === 'fulfilled');
+  console.log(
+    'total tokens after filtering by quotes api',
+    quotesFiltered.length
+  );
 
   // filter by min eth out
-  // const minOut = parseEther(config.minOut.toString());
-  const minOut = parseUnits(config.minOut.toString(), config.buyTokenDecimals);
   const minOutFiltered = quotesFiltered.filter((token) =>
-    BigNumber.from(token.tokenOut).gt(minOut)
+    BigNumber.from(token.buyAmount).gt(config.minOut)
   );
+  console.log('total tokens after filtering by minOut', minOutFiltered.length);
   return minOutFiltered;
 };
 
@@ -164,19 +173,9 @@ export const swapTokens = async (
     throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
   }
 
-  const toSwapWithBuyAmount = toSwap.map((token) => {
-    const buyAmount = token.tokenOut
-      .mul(10000 - config.buyAmountSlippageBps)
-      .div(10000);
-    return {
-      ...token,
-      buyAmount: buyAmount.eq(0) ? BigNumber.from(1) : buyAmount,
-    };
-  });
-
   // create orders
   const orders = await Promise.allSettled(
-    toSwapWithBuyAmount.map((token) =>
+    toSwap.map((token) =>
       orderBookApi.sendOrder({
         sellToken: token.address,
         buyToken: config.buyToken,
@@ -210,7 +209,7 @@ export const swapTokens = async (
       .map((x) => (x as PromiseFulfilledResult<string>).value)
   );
   // only execute drip for successfully created orders
-  const toActuallySwap = toSwapWithBuyAmount.filter(
+  const toActuallySwap = toSwap.filter(
     (x, idx) => orders[idx].status === 'fulfilled'
   );
 

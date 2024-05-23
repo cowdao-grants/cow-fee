@@ -34,14 +34,6 @@ const readConfig = async (): Promise<
     )
     .addOption(
       new Option(
-        '--min-out <min-out>',
-        'Minimum amount of to-token to receive per swap'
-      )
-        .default(0.02)
-        .argParser((x) => +x)
-    )
-    .addOption(
-      new Option(
         '--buy-amount-slippage-bps <buy-amount-slippage-bps>',
         'Tolerance to add to the quoted buyAmount'
       )
@@ -72,7 +64,6 @@ const readConfig = async (): Promise<
   const {
     network: selectedNetwork,
     maxOrders,
-    minOut,
     buyAmountSlippageBps,
     module: selectedModule,
     lookbackRange,
@@ -95,6 +86,7 @@ const readConfig = async (): Promise<
     keeper,
     appData,
     targetSafe,
+    minOut,
   ] = await Promise.all([
     moduleContract.receiver(),
     moduleContract.toToken(),
@@ -103,6 +95,7 @@ const readConfig = async (): Promise<
     moduleContract.keeper(),
     moduleContract.appData(),
     moduleContract.targetSafe(),
+    moduleContract.minOut(),
   ]);
   if (
     (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
@@ -110,12 +103,6 @@ const readConfig = async (): Promise<
   ) {
     throw new Error('Keeper key mismatch');
   }
-
-  const toTokenDecimals = await new ethers.Contract(
-    toToken,
-    erc20Abi,
-    provider
-  ).decimals();
 
   return [
     {
@@ -130,7 +117,6 @@ const readConfig = async (): Promise<
       buyToken: toToken,
       minOut,
       receiver,
-      buyTokenDecimals: toTokenDecimals,
       buyAmountSlippageBps,
       keeper,
       appData,
@@ -157,7 +143,7 @@ export const dripItAll = async () => {
       token.symbol,
       token.address,
       formatUnits(token.balance, token.decimals),
-      token.tokenOut,
+      token.buyAmount,
       token.needsApproval,
     ])
   );

@@ -56,7 +56,6 @@ Options:
   --network <network>                                   (choices: "mainnet", "gnosis")
   --rpc-url <rpc-url>
   --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
-  --min-out <min-out>                                  Minimum amount of to-token to receive per swap (default: 0.02)
   --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
   --module <module>                                    COWFeeModule address
   --token-list-strategy <strategy>                     Strategy to use to get the list of tokens to swap on (choices: "explorer", "chain", default: "explorer")

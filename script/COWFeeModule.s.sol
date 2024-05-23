@@ -10,9 +10,10 @@ contract COWFeeModuleDeployScript is Script {
         bytes32 appData = vm.envBytes32("APP_DATA");
         bool shouldEnableModule = vm.envBool("SHOULD_ENABLE_MODULE");
         address targetSafe = vm.envAddress("TARGET_SAFE");
+        uint256 minOut = vm.envUint("MIN_OUT");
 
         vm.broadcast();
-        COWFeeModule module = new COWFeeModule(settlement, targetSafe, toToken, keeper, appData, receiver);
+        COWFeeModule module = new COWFeeModule(settlement, targetSafe, toToken, keeper, appData, receiver, minOut);
 
         // only useful for local anvil setup
         if (shouldEnableModule) {

@@ -8,6 +8,7 @@ import { GPv2Order } from "./libraries/GPv2Order.sol";
 
 contract COWFeeModule {
     error OnlyKeeper();
+    error BuyAmountTooSmall();
 
     // not public to save deployment costs
     ISafe public immutable targetSafe;
@@ -18,6 +19,7 @@ contract COWFeeModule {
     IGPv2Settlement public immutable settlement;
     address public immutable vaultRelayer;
     address public immutable receiver;
+    uint256 public immutable minOut;
 
     struct Revocation {
         address token;
@@ -43,7 +45,8 @@ contract COWFeeModule {
         address _toToken,
         address _keeper,
         bytes32 _appData,
-        address _receiver
+        address _receiver,
+        uint256 _minOut
     ) {
         settlement = IGPv2Settlement(_settlement);
         vaultRelayer = settlement.vaultRelayer();
@@ -53,6 +56,7 @@ contract COWFeeModule {
         domainSeparator = settlement.domainSeparator();
         appData = _appData;
         receiver = _receiver;
+        minOut = _minOut;
     }
 
     /// @notice Approve given tokens of settlement contract to vault relayer
@@ -110,6 +114,7 @@ contract COWFeeModule {
             order.sellToken = IERC20(swapToken.token);
             order.sellAmount = swapToken.sellAmount;
             order.buyAmount = swapToken.buyAmount;
+            if (swapToken.buyAmount < minOut) revert BuyAmountTooSmall();
             bytes memory preSignature = _computePreSignature(order);
 
             approveAndDripInteractions[i + offset] = IGPv2Settlement.InteractionData({
