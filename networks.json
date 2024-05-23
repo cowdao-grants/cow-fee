@@ -1,8 +1,8 @@
 {
   "COWFeeModule": {
     "1": {
-      "address": "0x4cb34ae5d3976c3d66ae25de73272e1c59d551c3",
-      "transactionHash": "0xf48bfcbaa1ba5e9ff652a5e2a041d2b7fb9a7172b406414bc0cc5b05a14f99df"
+      "address": "0x502b16e41830a6f6d6738b93828ba66b42fe2dd9",
+      "transactionHash": "0x76fddce1f960d344ed9c74bce007f8108d05bcaf891ee5f487735b46e9177b6c"
     },
     "100": {
       "address": "0xf5172fe5f0473f20a5b1fc920cbfaa4cd3ccfd23",
