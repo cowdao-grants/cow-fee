@@ -58,8 +58,8 @@ Options:
   --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
   --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
   --module <module>                                    COWFeeModule address
-  --token-list-strategy <strategy>                     Strategy to use to get the list of tokens to swap on (choices: "explorer", "chain", default: "explorer")
   --lookback-range <n>                                 Last <n> number of blocks to check the `Trade` events for (default: 1000)
+  --multicall-size <n>                                 max number of calls in a multicall (default: 100)
   -h, --help                                           display help for command
 ```
 
@@ -73,8 +73,8 @@ yarn ts-node index.ts \
   --rpc-url https://eth.llamarpc.com \
   --buy-amount-slippage-bps 100 \
   --module <module-address> \
-  --token-list-strategy explorer \
-  --lookback-range 1000
+  --lookback-range 1000 \
+  --multicall-size 100
 ```
 
 #### Docker
@@ -85,6 +85,7 @@ docker build -t cow-fee .
 # run the container
 docker run --rm \
   -e PRIVATE_KEY=$PRIVATE_KEY \
+  -e LOG_LEVEL=debug \
   cow-fee \
   --network mainnet \
   --max-orders 250 \
@@ -92,8 +93,8 @@ docker run --rm \
   --rpc-url https://eth.llamarpc.com \
   --buy-amount-slippage-bps 100 \
   --module <module-address> \
-  --token-list-strategy explorer \
-  --lookback-range 1000
+  --lookback-range 1000 \
+  --multicall-size 100
 ```
 
 ### Module operations with cast

@@ -1,7 +1,11 @@
 import { ethers } from 'ethers';
 import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
-import { IConfig, networkSpecificConfigs } from './ts/common';
+import {
+  IConfig,
+  getLogger,
+  networkSpecificConfigs,
+} from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
 import { erc20Abi, moduleAbi, settlementAbi } from './ts/abi';
 
@@ -43,18 +47,23 @@ const readConfig = async (): Promise<
     .addOption(new Option('--module <module>', 'COWFeeModule address'))
     .addOption(
       new Option(
-        '--token-list-strategy <strategy>',
-        'Strategy to use to get the list of tokens to swap on'
-      )
-        .choices(['explorer', 'chain'] as const)
-        .default('explorer' as 'explorer' | 'chain')
-    )
-    .addOption(
-      new Option(
         '--lookback-range <n>',
         'Last <n> number of blocks to check the `Trade` events for'
       )
         .default(1000)
+        .argParser((x) => +x)
+    )
+    .addOption(
+      new Option('--multicall-size <n>', 'max number of calls in a multicall')
+        .default(100)
+        .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--query-logs-size <n>',
+        'max block range to use for eth_getLogs'
+      )
+        .default(50000)
         .argParser((x) => +x)
     );
   program.parse();
@@ -67,7 +76,8 @@ const readConfig = async (): Promise<
     buyAmountSlippageBps,
     module: selectedModule,
     lookbackRange,
-    tokenListStrategy,
+    multicallSize,
+    queryLogsSize,
   } = options;
   const network = selectedNetwork || 'mainnet';
 
@@ -120,32 +130,35 @@ const readConfig = async (): Promise<
       buyAmountSlippageBps,
       keeper,
       appData,
-      tokenListStrategy,
       lookbackRange,
       targetSafe,
+      multicallSize,
+      queryLogsSize,
     },
     provider,
   ];
 };
 
+const logger = getLogger('index');
+
 export const dripItAll = async () => {
   // await getAppData().then(console.log);
 
   const [config, provider] = await readConfig();
-  console.log(config.options);
-  // return;
+  logger.info(config.options, 'config options');
   const signer = new ethers.Wallet(config.privateKey, provider);
 
+  process.on('warning', (e) => console.warn(e.stack));
   const tokensToSwap = await getTokensToSwap(config, provider);
-  console.log(
-    'tokensToSwap',
+  logger.info(
     tokensToSwap.map((token) => [
       token.symbol,
       token.address,
       formatUnits(token.balance, token.decimals),
       token.buyAmount,
       token.needsApproval,
-    ])
+    ]),
+    'tokensToSwap'
   );
 
   for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {

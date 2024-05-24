@@ -1,6 +1,7 @@
 import { OrderBookApi, SupportedChainId } from '@cowprotocol/cow-sdk';
 import { ethers } from 'ethers';
 import { multicall3Abi } from './abi';
+import pino from 'pino';
 
 export const networkSpecificConfigs = {
   mainnet: {
@@ -31,8 +32,9 @@ export interface IConfig {
   buyAmountSlippageBps: number;
   keeper: string;
   appData: string;
-  tokenListStrategy: 'explorer' | 'chain';
   lookbackRange: number;
+  multicallSize: number;
+  queryLogsSize: number;
 }
 
 const toChainId = (network: keyof typeof networkSpecificConfigs) => {
@@ -70,4 +72,44 @@ export const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
     multicall3Abi,
     provider
   );
+};
+
+export const chunkedMulticall = async (
+  provider: ethers.providers.JsonRpcProvider,
+  calls: { target: string; callData: string }[],
+  chunkSize: number
+) => {
+  const mcall = getMulticall3(provider);
+  const nChunks = Math.ceil(calls.length / chunkSize);
+  const ret = [];
+  for (let i = 0; i < nChunks; i++) {
+    const chunk = calls.slice(i * chunkSize, (i + 1) * chunkSize);
+    ret.push(...(await mcall.tryAggregate(false, chunk)));
+  }
+  return ret;
+};
+
+export const chunkedQueryFilter = async (
+  contract: ethers.Contract,
+  filter: ethers.EventFilter,
+  fromBlock: number,
+  toBlock: number,
+  chunkSize: number
+) => {
+  const ret = [];
+  for (let i = fromBlock; i <= toBlock; i += chunkSize) {
+    ret.push(
+      ...(await contract.queryFilter(
+        filter,
+        i,
+        Math.min(i + chunkSize - 1, toBlock)
+      ))
+    );
+  }
+  return ret;
+};
+
+const logger = pino();
+export const getLogger = (name: string) => {
+  return logger.child({ name, level: process.env.LOG_LEVEL || 'info' });
 };
