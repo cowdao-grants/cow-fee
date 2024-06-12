@@ -89,9 +89,14 @@ contract COWFeeModule {
     /// @notice Commit presignatures for sell orders of given tokens of given amounts.
     ///         Optionally, also approve the tokens to be spent to the vault relayer.
     function drip(address[] calldata _approveTokens, SwapToken[] calldata _swapTokens) external onlyKeeper {
+        // we need a special interaction for toToken because cowswap wont quote a swap where buy
+        // and sell tokens are identical.
         uint256 toTokenBalance = IERC20(toToken).balanceOf(address(settlement));
-        bool hasWethTransfer = toTokenBalance >= minOut;
-        uint256 len = _approveTokens.length + _swapTokens.length + (hasWethTransfer ? 1 : 0);
+
+        // determine if we need a toToken transfer interaction
+        bool hasToTokenTransfer = toTokenBalance >= minOut;
+        uint256 len = _approveTokens.length + _swapTokens.length + (hasToTokenTransfer ? 1 : 0);
+
         IGPv2Settlement.InteractionData[] memory approveAndDripInteractions = new IGPv2Settlement.InteractionData[](len);
         _approveInteractions(_approveTokens, approveAndDripInteractions);
 
@@ -130,7 +135,8 @@ contract COWFeeModule {
             }
         }
 
-        if (hasWethTransfer) {
+        // add toToken direct transfer interaction
+        if (hasToTokenTransfer) {
             approveAndDripInteractions[len - 1] = IGPv2Settlement.InteractionData({
                 to: toToken,
                 value: 0,
