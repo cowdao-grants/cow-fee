@@ -162,4 +162,14 @@ contract COWFeeModuleTest is Test {
         vm.expectRevert(COWFeeModule.BuyAmountTooSmall.selector);
         module.drip(approveTokens, swapTokens);
     }
+
+    function testDripWeth() external {
+        deal(WETH, address(settlement), minOut);
+        uint256 balanceBefore = IERC20(WETH).balanceOf(receiver);
+
+        vm.prank(keeper);
+        module.drip(new address[](0), new COWFeeModule.SwapToken[](0));
+        uint256 balanceAfter = IERC20(WETH).balanceOf(receiver);
+        assertEq(balanceAfter - balanceBefore, minOut, "drip didnt transfer weth as expected");
+    }
 }
