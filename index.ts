@@ -3,7 +3,8 @@ import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
-import { erc20Abi, moduleAbi, settlementAbi } from './ts/abi';
+import { moduleAbi } from './ts/abi';
+import { WebClient } from '@slack/web-api';
 
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
@@ -40,7 +41,7 @@ const readConfig = async (): Promise<
         .default(100)
         .argParser((x) => +x)
     )
-    .addOption(new Option('--module <module>', 'COWFeeModule address'))
+    .requiredOption('--module <module>', 'COWFeeModule address')
     .addOption(
       new Option(
         '--token-list-strategy <strategy>',
@@ -56,6 +57,17 @@ const readConfig = async (): Promise<
       )
         .default(1000)
         .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        '--slack <channel>',
+        'The slack conversation ID to send a summary of the drip operation to (requires SLACK_TOKEN env var)'
+      ).argParser((channel) => {
+        return {
+          channel: channel,
+          token: readEnv('SLACK_TOKEN'),
+        };
+      })
     );
   program.parse();
 
@@ -65,17 +77,16 @@ const readConfig = async (): Promise<
     network: selectedNetwork,
     maxOrders,
     buyAmountSlippageBps,
-    module: selectedModule,
+    module,
     lookbackRange,
     tokenListStrategy,
   } = options;
   const network = selectedNetwork || 'mainnet';
 
-  const { rpcUrl: defaultRpcUrl, module: defaultModule } =
+  const { rpcUrl: defaultRpcUrl } =
     networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const rpcUrl = options.rpcUrl || defaultRpcUrl;
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-  const module = selectedModule || defaultModule;
 
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
   const [
@@ -123,17 +134,16 @@ const readConfig = async (): Promise<
       tokenListStrategy,
       lookbackRange,
       targetSafe,
+      slackConfig: options.slack,
     },
     provider,
   ];
 };
 
 export const dripItAll = async () => {
-  // await getAppData().then(console.log);
-
   const [config, provider] = await readConfig();
   console.log(config.options);
-  // return;
+
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
@@ -156,6 +166,25 @@ export const dripItAll = async () => {
       console.error(err);
     }
     break;
+  }
+
+  if (config.slackConfig) {
+    const client = new WebClient(config.slackConfig.token);
+    let expectedBuy = tokensToSwap.reduce(
+      (sum, toSwap) => sum.add(toSwap.buyAmount),
+      ethers.BigNumber.from(0)
+    );
+    const result = await client.chat.postMessage({
+      text: `Fee collection for chain ${
+        config.network
+      } initiated. Expecting proceeds of ${expectedBuy.toString()} (${
+        config.buyToken
+      })\n\nFollow the progress at ${
+        networkSpecificConfigs[config.network].explorer
+      }/address/${config.gpv2Settlement}`,
+      channel: config.slackConfig.channel,
+    });
+    console.log(`Successfully sent message ${result.ts} to slack`);
   }
 };
 

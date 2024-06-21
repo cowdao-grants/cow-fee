@@ -4,16 +4,23 @@ import { multicall3Abi } from './abi';
 
 export const networkSpecificConfigs = {
   mainnet: {
-    // NOTE: replace with deployed address
-    module: '0x29023DE63D7075B4cC2CE30B55f050f9c67548d4',
     rpcUrl: 'https://eth.llamarpc.com',
+    explorer: 'https://explorer.cow.fi',
   },
   gnosis: {
-    // NOTE: replace with deployed address
-    module: '0x4c04377f90Eb1E42D845AB21De874803B8773669',
     rpcUrl: 'https://1rpc.io/gnosis',
+    explorer: 'https://explorer.cow.fi/gc',
+  },
+  arbitrum: {
+    rpcUrl: 'https://arb1.arbitrum.io/rpc',
+    explorer: 'https://explorer.cow.fi/arb1',
   },
 };
+
+export interface ISlackConfig {
+  channel: string;
+  token: string;
+}
 
 export interface IConfig {
   privateKey: string;
@@ -33,6 +40,7 @@ export interface IConfig {
   appData: string;
   tokenListStrategy: 'explorer' | 'chain';
   lookbackRange: number;
+  slackConfig?: ISlackConfig;
 }
 
 const toChainId = (network: keyof typeof networkSpecificConfigs) => {
@@ -42,6 +50,9 @@ const toChainId = (network: keyof typeof networkSpecificConfigs) => {
     }
     case 'gnosis': {
       return SupportedChainId.GNOSIS_CHAIN;
+    }
+    case 'arbitrum': {
+      return SupportedChainId.ARBITRUM_ONE;
     }
     default: {
       throw new Error(`Unsupported network ${network}`);
