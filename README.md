@@ -33,7 +33,8 @@ TO_TOKEN
 KEEPER
 SETTLEMENT
 APP_DATA
-SHOULD_ENABLE_MODULE
+TARGET_SAFE
+MIN_OUT
 ```
 
 Then run the script to deploy the module:
