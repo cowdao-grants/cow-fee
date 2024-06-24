@@ -3,8 +3,7 @@ import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
-import { moduleAbi } from './ts/abi';
-import { WebClient } from '@slack/web-api';
+import { erc20Abi, moduleAbi } from './ts/abi';
 
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
@@ -164,12 +163,15 @@ export const dripItAll = async () => {
     (sum, toSwap) => sum.add(toSwap.buyAmount),
     ethers.BigNumber.from(0)
   );
+  const buyTokenContract = new ethers.Contract(
+    config.buyToken,
+    erc20Abi,
+    provider
+  );
   console.log(
     `Fee collection for chain ${config.network} initiated (${
       tokensToSwap.length
-    } orders). Expecting proceeds of ${expectedBuy.toString()} (${
-      config.buyToken
-    })\n\nFollow the progress at ${
+    } orders). Expecting proceeds of ${expectedBuy.toString()} ${await buyTokenContract.symbol()}!\n\nFollow the progress at ${
       networkSpecificConfigs[config.network].explorer
     }/address/${config.gpv2Settlement}`
   );
