@@ -180,9 +180,9 @@ export const dripItAll = async () => {
       ethers.BigNumber.from(0)
     );
     const result = await client.chat.postMessage({
-      text: `Fee collection for chain ${
-        config.network
-      } initiated. Expecting proceeds of ${expectedBuy.toString()} (${
+      text: `Fee collection for chain ${config.network} initiated (${
+        tokensToSwap.length
+      } orders). Expecting proceeds of ${expectedBuy.toString()} (${
         config.buyToken
       })\n\nFollow the progress at ${
         networkSpecificConfigs[config.network].explorer
