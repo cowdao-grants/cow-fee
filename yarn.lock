@@ -560,6 +560,23 @@
     p-retry "^4"
     retry "^0.13.1"
 
+"@transcend-io/secret-value@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@transcend-io/secret-value/-/secret-value-1.2.0.tgz#07712c0578090d9704cf734a19d659795a66ce7a"
+  integrity sha512-UeBu58/7Lsu2ybigAaD9mVXLYTQUTQFQDEkIEkWW5Ss58zTwouJKGjkp4Fsk3pfguifybS/DKk7vwjbImVdTDw==
+  dependencies:
+    "@transcend-io/type-utils" "^1.1.2"
+    fp-ts "^2.16.1"
+    io-ts "^2.2.21"
+
+"@transcend-io/type-utils@^1.1.2":
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/@transcend-io/type-utils/-/type-utils-1.4.2.tgz#38b843c07b217997a578104365576ac163fe6fe5"
+  integrity sha512-PeWWlL2mE/D+zHRdj5kgx6TNHV6Q2NHK2Z30X16fS0tmbdsvZGYvHmqLYsOAlyUzdDcZyxsHNUgUqx7hbSar9w==
+  dependencies:
+    fp-ts "^2.16.1"
+    io-ts "^2.2.21"
+
 "@tsconfig/node10@^1.0.7":
   version "1.0.11"
   resolved "https://registry.yarnpkg.com/@tsconfig/node10/-/node10-1.0.11.tgz#6ee46400685f130e278128c7b38b7e031ff5b2f2"
@@ -957,6 +974,11 @@ form-data@^4.0.0:
     combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
+fp-ts@^2.16.1:
+  version "2.16.6"
+  resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-2.16.6.tgz#9d63c5b2a06355d627ae94c37a5cffda5c455d24"
+  integrity sha512-v7w209VPj4L6pPn/ftFRJu31Oa8QagwcVw7BZmLCUWU4AQoc954rX9ogSIahDf67Pg+GjPbkW/Kn9XWnlWJG0g==
+
 function-bind@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.2.tgz#2c02d864d97f3ea6c8830c464cbd11ab6eab7a1c"
@@ -1053,6 +1075,11 @@ interface-ipld-format@^1.0.0:
     cids "^1.1.6"
     multicodec "^3.0.1"
     multihashes "^4.0.2"
+
+io-ts@^2.2.21:
+  version "2.2.21"
+  resolved "https://registry.yarnpkg.com/io-ts/-/io-ts-2.2.21.tgz#4ef754176f7082a1099d04c7d5c4ea53267c530a"
+  integrity sha512-zz2Z69v9ZIC3mMLYWIeoUcwWD6f+O7yP92FMVVaXEOSZH1jnVBmET/urd/uoarD1WGBY4rCj8TAyMPzsGNzMFQ==
 
 ipfs-only-hash@^4.0.0:
   version "4.0.0"

@@ -5,6 +5,7 @@ import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
 import { moduleAbi } from './ts/abi';
 import { WebClient } from '@slack/web-api';
+import { Secret } from '@transcend-io/secret-value';
 
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
@@ -22,7 +23,11 @@ const readConfig = async (): Promise<
   const program = new Command()
     .name('cow-fee')
     .addOption(
-      new Option('--network <network>').choices(['mainnet', 'gnosis'] as const)
+      new Option('--network <network>').choices([
+        'mainnet',
+        'gnosis',
+        'arbitrum',
+      ] as const)
     )
     .addOption(new Option('--rpc-url <rpc-url>'))
     .addOption(
@@ -65,7 +70,7 @@ const readConfig = async (): Promise<
       ).argParser((channel) => {
         return {
           channel: channel,
-          token: readEnv('SLACK_TOKEN'),
+          token: new Secret(readEnv('SLACK_TOKEN')),
         };
       })
     );
@@ -169,7 +174,7 @@ export const dripItAll = async () => {
   }
 
   if (config.slackConfig) {
-    const client = new WebClient(config.slackConfig.token);
+    const client = new WebClient(config.slackConfig.token.release());
     let expectedBuy = tokensToSwap.reduce(
       (sum, toSwap) => sum.add(toSwap.buyAmount),
       ethers.BigNumber.from(0)

@@ -1,6 +1,7 @@
 import { OrderBookApi, SupportedChainId } from '@cowprotocol/cow-sdk';
 import { ethers } from 'ethers';
 import { multicall3Abi } from './abi';
+import { Secret } from '@transcend-io/secret-value';
 
 export const networkSpecificConfigs = {
   mainnet: {
@@ -19,7 +20,7 @@ export const networkSpecificConfigs = {
 
 export interface ISlackConfig {
   channel: string;
-  token: string;
+  token: Secret<string>;
 }
 
 export interface IConfig {
