@@ -61,7 +61,6 @@ Options:
   --module <module>                                    COWFeeModule address
   --token-list-strategy <strategy>                     Strategy to use to get the list of tokens to swap on (choices: "explorer", "chain", default: "explorer")
   --lookback-range <n>                                 Last <n> number of blocks to check the `Trade` events for (default: 1000)
-  [--slack <channel>]                                  Send a withdrawl summary to the given slack channel (also required `SLACK_TOKEN` to be se)
   -h, --help                                           display help for command
 ```
 

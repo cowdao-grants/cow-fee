@@ -5,7 +5,6 @@ import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
 import { moduleAbi } from './ts/abi';
 import { WebClient } from '@slack/web-api';
-import { Secret } from '@transcend-io/secret-value';
 
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
@@ -62,17 +61,6 @@ const readConfig = async (): Promise<
       )
         .default(1000)
         .argParser((x) => +x)
-    )
-    .addOption(
-      new Option(
-        '--slack <channel>',
-        'The slack conversation ID to send a summary of the drip operation to (requires SLACK_TOKEN env var)'
-      ).argParser((channel) => {
-        return {
-          channel: channel,
-          token: new Secret(readEnv('SLACK_TOKEN')),
-        };
-      })
     );
   program.parse();
 
@@ -139,7 +127,6 @@ const readConfig = async (): Promise<
       tokenListStrategy,
       lookbackRange,
       targetSafe,
-      slackConfig: options.slack,
     },
     provider,
   ];
@@ -173,24 +160,19 @@ export const dripItAll = async () => {
     break;
   }
 
-  if (config.slackConfig) {
-    const client = new WebClient(config.slackConfig.token.release());
-    let expectedBuy = tokensToSwap.reduce(
-      (sum, toSwap) => sum.add(toSwap.buyAmount),
-      ethers.BigNumber.from(0)
-    );
-    const result = await client.chat.postMessage({
-      text: `Fee collection for chain ${config.network} initiated (${
-        tokensToSwap.length
-      } orders). Expecting proceeds of ${expectedBuy.toString()} (${
-        config.buyToken
-      })\n\nFollow the progress at ${
-        networkSpecificConfigs[config.network].explorer
-      }/address/${config.gpv2Settlement}`,
-      channel: config.slackConfig.channel,
-    });
-    console.log(`Successfully sent message ${result.ts} to slack`);
-  }
+  let expectedBuy = tokensToSwap.reduce(
+    (sum, toSwap) => sum.add(toSwap.buyAmount),
+    ethers.BigNumber.from(0)
+  );
+  console.log(
+    `Fee collection for chain ${config.network} initiated (${
+      tokensToSwap.length
+    } orders). Expecting proceeds of ${expectedBuy.toString()} (${
+      config.buyToken
+    })\n\nFollow the progress at ${
+      networkSpecificConfigs[config.network].explorer
+    }/address/${config.gpv2Settlement}`
+  );
 };
 
 const main = async () => {

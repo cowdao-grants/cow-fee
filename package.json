@@ -3,8 +3,6 @@
     "@commander-js/extra-typings": "^12.0.1",
     "@cowprotocol/app-data": "^2.1.0",
     "@cowprotocol/cow-sdk": "^5.2.0",
-    "@slack/web-api": "^7.2.0",
-    "@transcend-io/secret-value": "^1.2.0",
     "axios": "^1.6.8",
     "commander": "^12.0.0",
     "ethers": "v5"
