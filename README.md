@@ -54,7 +54,7 @@ variable.
 Usage: cow-fee [options]
 
 Options:
-  --network <network>                                   (choices: "mainnet", "gnosis","arbitrum")
+  --network <network>                                   (choices: "mainnet", "gnosis", "arbitrum")
   --rpc-url <rpc-url>
   --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
   --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
