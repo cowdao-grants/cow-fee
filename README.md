@@ -9,7 +9,7 @@ The driver script is located at [`index.ts`](./index.ts). All other code is in t
 directory. It uses [`Ethplorer`](https://ethplorer.io) and [`Blockscout`](https://gnosis.blockscout.com) APIs
 to determine the different tokens held by the Settlement contract. It then filters them on the basis of:
 
-1. Swap output value, see `--min-out` param.
+1. Swap output value, see module setup.
 
 The program after filtering and determining which tokens to swap, posts the swap orders on the CoW OrderBook API.
 For all the orders that got successfully posted, it determines which of those orders require approval
@@ -33,7 +33,8 @@ TO_TOKEN
 KEEPER
 SETTLEMENT
 APP_DATA
-SHOULD_ENABLE_MODULE
+TARGET_SAFE
+MIN_OUT
 ```
 
 Then run the script to deploy the module:
@@ -53,7 +54,7 @@ variable.
 Usage: cow-fee [options]
 
 Options:
-  --network <network>                                   (choices: "mainnet", "gnosis")
+  --network <network>                                   (choices: "mainnet", "gnosis", "arbitrum")
   --rpc-url <rpc-url>
   --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
   --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
@@ -69,11 +70,10 @@ Options:
 yarn ts-node index.ts \
   --network mainnet \
   --max-orders 250 \
-  --min-out 0.1 \
   --rpc-url https://eth.llamarpc.com \
   --buy-amount-slippage-bps 100 \
   --module <module-address> \
-  --token-list-strategy explorer \
+  --token-list-strategy chain \
   --lookback-range 1000
 ```
 
@@ -88,11 +88,10 @@ docker run --rm \
   cow-fee \
   --network mainnet \
   --max-orders 250 \
-  --min-out 0.1 \
   --rpc-url https://eth.llamarpc.com \
   --buy-amount-slippage-bps 100 \
   --module <module-address> \
-  --token-list-strategy explorer \
+  --token-list-strategy chain \
   --lookback-range 1000
 ```
 

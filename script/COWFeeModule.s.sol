@@ -8,7 +8,7 @@ contract COWFeeModuleDeployScript is Script {
         address keeper = vm.envAddress("KEEPER");
         address settlement = vm.envAddress("SETTLEMENT");
         bytes32 appData = vm.envBytes32("APP_DATA");
-        bool shouldEnableModule = vm.envBool("SHOULD_ENABLE_MODULE");
+        bool shouldEnableModule = vm.envOr("SHOULD_ENABLE_MODULE", false);
         address targetSafe = vm.envAddress("TARGET_SAFE");
         uint256 minOut = vm.envUint("MIN_OUT");
 

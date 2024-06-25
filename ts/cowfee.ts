@@ -6,8 +6,7 @@ import {
   networkSpecificConfigs,
 } from './common';
 import { getTokenBalances } from './explorer-apis';
-import { multicall3Abi, erc20Abi, moduleAbi } from './abi';
-import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
+import { erc20Abi, moduleAbi } from './abi';
 import {
   BuyTokenDestination,
   OrderBookApi,

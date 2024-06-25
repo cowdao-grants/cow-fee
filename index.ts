@@ -3,7 +3,7 @@ import { formatUnits } from 'ethers/lib/utils';
 import { getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
-import { erc20Abi, moduleAbi, settlementAbi } from './ts/abi';
+import { erc20Abi, moduleAbi } from './ts/abi';
 
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
@@ -21,7 +21,11 @@ const readConfig = async (): Promise<
   const program = new Command()
     .name('cow-fee')
     .addOption(
-      new Option('--network <network>').choices(['mainnet', 'gnosis'] as const)
+      new Option('--network <network>').choices([
+        'mainnet',
+        'gnosis',
+        'arbitrum',
+      ] as const)
     )
     .addOption(new Option('--rpc-url <rpc-url>'))
     .addOption(
@@ -40,7 +44,7 @@ const readConfig = async (): Promise<
         .default(100)
         .argParser((x) => +x)
     )
-    .addOption(new Option('--module <module>', 'COWFeeModule address'))
+    .requiredOption('--module <module>', 'COWFeeModule address')
     .addOption(
       new Option(
         '--token-list-strategy <strategy>',
@@ -65,17 +69,16 @@ const readConfig = async (): Promise<
     network: selectedNetwork,
     maxOrders,
     buyAmountSlippageBps,
-    module: selectedModule,
+    module,
     lookbackRange,
     tokenListStrategy,
   } = options;
   const network = selectedNetwork || 'mainnet';
 
-  const { rpcUrl: defaultRpcUrl, module: defaultModule } =
+  const { rpcUrl: defaultRpcUrl } =
     networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const rpcUrl = options.rpcUrl || defaultRpcUrl;
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-  const module = selectedModule || defaultModule;
 
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
   const [
@@ -129,11 +132,9 @@ const readConfig = async (): Promise<
 };
 
 export const dripItAll = async () => {
-  // await getAppData().then(console.log);
-
   const [config, provider] = await readConfig();
   console.log(config.options);
-  // return;
+
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
@@ -157,6 +158,23 @@ export const dripItAll = async () => {
     }
     break;
   }
+
+  let expectedBuy = tokensToSwap.reduce(
+    (sum, toSwap) => sum.add(toSwap.buyAmount),
+    ethers.BigNumber.from(0)
+  );
+  const buyTokenContract = new ethers.Contract(
+    config.buyToken,
+    erc20Abi,
+    provider
+  );
+  console.log(
+    `Fee collection for chain ${config.network} initiated (${
+      tokensToSwap.length
+    } orders). Expecting proceeds of ${expectedBuy.toString()} ${await buyTokenContract.symbol()}!\n\nFollow the progress at ${
+      networkSpecificConfigs[config.network].explorer
+    }/address/${config.gpv2Settlement}`
+  );
 };
 
 const main = async () => {
