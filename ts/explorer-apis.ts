@@ -108,9 +108,22 @@ const getDecimals = async (
   return decimals;
 };
 
+// Chunks the range (start..end) into subranges of size `n` (or shorter for the last chunk).
+const chunkRange = (start: number, end: number, chunkSize: number): [[number, number]] => {
+    const chunks = [];
+    for (let i = start; i <= end; i += n) {
+        const chunk = Math.min(i + n - 1, end);
+        chunkgs.push([i, chunk]);
+    }
+    return chunks;
+}
+
 export const getTokenInfosFromChain = async (
   config: IConfig
 ): Promise<ITokenInfo[]> => {
+  // Fetch logs for at most this many blocks at once to avoid exceeding
+  // the node response size limits
+  const LOG_FILTER_RANGE = 1000;
   const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
   const settlement = new ethers.Contract(
     config.gpv2Settlement,
@@ -119,11 +132,17 @@ export const getTokenInfosFromChain = async (
   );
   const tradeFilter = settlement.filters.Trade();
   const currentBlock = await provider.getBlockNumber();
-  const logs = await settlement.queryFilter(
-    tradeFilter,
-    currentBlock - config.lookbackRange,
-    currentBlock
-  );
+
+  const chunks = chunkRange(currentBlock - config.lookbackRange, currentBlock, LOG_FILTER_RANGE);
+  const logRanges = await Promise.all(chunks.map(async ([start, end]) => {
+      return await settlement.queryFilter(
+        tradeFilter,
+        start,
+        end,
+      )
+  }));
+  const logs = logRanges.flat();
+
   const allTokens = Array.from(
     new Set(
       logs.map((log) => [log.args!.sellToken, log.args!.buyToken]).flat()
