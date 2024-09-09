@@ -108,7 +108,8 @@ const getDecimals = async (
   return decimals;
 };
 
-// Chunks the range (start..end) into subranges of size `n` (or shorter for the last chunk).
+// Chunks the range [start,end] into subranges of length `chunkSize`
+// (or shorter for the last chunk).
 const chunkRange = (start: number, end: number, chunkSize: number): [[number, number]] => {
     const chunks = [];
     for (let i = start; i <= end; i += chunkSize) {
