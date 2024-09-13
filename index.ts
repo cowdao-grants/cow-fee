@@ -168,10 +168,12 @@ export const dripItAll = async () => {
     erc20Abi,
     provider
   );
+  const decimals = await buyTokenContract.decimals();
+  const expectedUnits = expectedBuy.div(ethers.BigNumber.from(10).pow(decimals));
   console.log(
     `Fee collection for chain ${config.network} initiated (${
       tokensToSwap.length
-    } orders). Expecting proceeds of ${expectedBuy.toString()} ${await buyTokenContract.symbol()}!\n\nFollow the progress at ${
+    } orders). Expecting proceeds of ${expectedUnits.toString()} ${await buyTokenContract.symbol()}!\n\nFollow the progress at ${
       networkSpecificConfigs[config.network].explorer
     }/address/${config.gpv2Settlement}`
   );
