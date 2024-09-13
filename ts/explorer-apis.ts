@@ -110,8 +110,8 @@ const getDecimals = async (
 
 // Chunks the range [start,end] into subranges of length `chunkSize`
 // (or shorter for the last chunk).
-const chunkRange = (start: number, end: number, chunkSize: number): [[number, number]] => {
-    const chunks = [];
+const chunkRange = (start: number, end: number, chunkSize: number): [number, number][] => {
+    const chunks: [number, number][] = [];
     for (let i = start; i <= end; i += chunkSize) {
         const chunk = Math.min(i + chunkSize - 1, end);
         chunks.push([i, chunk]);
