@@ -1,12 +1,16 @@
 {
   "COWFeeModule": {
     "1": {
-      "address": "0x502b16e41830a6f6d6738b93828ba66b42fe2dd9",
-      "transactionHash": "0x76fddce1f960d344ed9c74bce007f8108d05bcaf891ee5f487735b46e9177b6c"
+      "address": "0x643adac1a1fc6cce46120bc7fee8f58a7e535328",
+      "transactionHash": "0x63b794f560f493a627c3acb14f843340cac856fdc84c746d7d2dcff48a51d080"
     },
-    "100": {
-      "address": "0xf5172fe5f0473f20a5b1fc920cbfaa4cd3ccfd23",
-      "transactionHash": "0x0dd0fc51bc1ec1b6edc36e770f666c749212b5a2e80fd6761cc325adb023d4eb"
+    "42161": {
+      "address": "0xcddba79f1d999289e8d0173130f6f3e3d38c95dc",
+      "transactionHash": "0xf49a1a52c595497fbc25e0d829196622dede6ecd6157d71f79b72f2a52586b89"
+    },
+    "8453": {
+      "address": "0x1609a54e893f7c1b162fd246ba88039ba15a55b3",
+      "transactionHash": "0xc536a27afaae5136b69b25208c2753dd5e613a183d6a8e0722bed5dc4579c095"
     }
   }
 }
