@@ -25,6 +25,7 @@ const readConfig = async (): Promise<
         'mainnet',
         'gnosis',
         'arbitrum',
+        'base',
       ] as const)
     )
     .addOption(new Option('--rpc-url <rpc-url>'))

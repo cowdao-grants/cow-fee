@@ -15,6 +15,10 @@ export const networkSpecificConfigs = {
     rpcUrl: 'https://arb1.arbitrum.io/rpc',
     explorer: 'https://explorer.cow.fi/arb1',
   },
+  base: {
+    rpcUrl: 'https://base.llamarpc.com',
+    explorer: 'https://explorer.cow.fi/base',
+  },
 };
 
 export interface IConfig {
@@ -47,6 +51,9 @@ const toChainId = (network: keyof typeof networkSpecificConfigs) => {
     }
     case 'arbitrum': {
       return SupportedChainId.ARBITRUM_ONE;
+    }
+    case 'base': {
+      return SupportedChainId.BASE;
     }
     default: {
       throw new Error(`Unsupported network ${network}`);
