@@ -229,7 +229,9 @@ export const swapTokens = async (
   // drip it
   const dripTx: ContractTransaction = await moduleContract.drip(
     toApprove,
-    toDrip
+    toDrip,
+    // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
+    { nonce: await signerWithProvider.getTransactionCount() }
   );
   console.log('dripTx', dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
