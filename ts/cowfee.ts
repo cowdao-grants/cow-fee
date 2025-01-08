@@ -139,14 +139,13 @@ export const getTokensToSwap = async (
 
 // get COWFeeModule appData
 export const getAppData = async () => {
-  const metadataApi = new MetadataApi();
-  const appCode = 'CoWFeeModule';
-  const environment = 'prod';
-  const appDataDoc = await metadataApi.generateAppDataDoc({
-    appCode,
-    environment,
+  const appDataDoc = {
+    appCode: 'CoWFeeModule',
+    environment: 'prod',
+    version: '1.1.0',
     metadata: {},
-  });
+  };
+  const metadataApi = new MetadataApi();
   const { cid, appDataHex, appDataContent } = await metadataApi.appDataToCid(
     appDataDoc
   );
