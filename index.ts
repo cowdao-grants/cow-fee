@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { formatUnits } from 'ethers/lib/utils';
-import { getTokensToSwap, swapTokens } from './ts/cowfee';
+import { getAppData, getTokensToSwap, swapTokens } from './ts/cowfee';
 import { IConfig, networkSpecificConfigs } from './ts/common';
 import { Command, Option } from '@commander-js/extra-typings';
 import { erc20Abi, moduleAbi } from './ts/abi';
@@ -182,6 +182,8 @@ export const dripItAll = async () => {
 };
 
 const main = async () => {
+  let appData = await getAppData();
+  console.log(appData.appDataHex);
   await dripItAll();
 };
 
