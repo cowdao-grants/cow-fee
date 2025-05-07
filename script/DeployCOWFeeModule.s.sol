@@ -1,7 +1,9 @@
-import { Script } from "forge-std/Script.sol";
-import { COWFeeModule, ISafe } from "src/COWFeeModule.sol";
+pragma solidity 0.8.25;
 
-contract COWFeeModuleDeployScript is Script {
+import {Script} from "forge-std/Script.sol";
+import {COWFeeModule, ISafe} from "src/COWFeeModule.sol";
+
+contract DeployCOWFeeModule is Script {
     function run() external {
         address receiver = vm.envAddress("RECEIVER");
         address toToken = vm.envAddress("TO_TOKEN");

@@ -6,8 +6,7 @@ Module contract code is located [here](./src/COWFeeModule.sol). The test for it
 is located [here](./test/COWFeeModule.t.sol).
 
 The driver script is located at [`index.ts`](./index.ts). All other code is in the [`ts`](./ts)
-directory. It uses [`Ethplorer`](https://ethplorer.io) and [`Blockscout`](https://gnosis.blockscout.com) APIs
-to determine the different tokens held by the Settlement contract. It then filters them on the basis of:
+directory. It can use either [`Ethplorer`](https://ethplorer.io), [`Blockscout`](https://gnosis.blockscout.com) APIs or it can directly get the information on-chain using Settlement `Trade` events to determine the different tokens held by the Settlement contract. It then filters them on the basis of:
 
 1. Swap output value, see module setup.
 
@@ -23,24 +22,16 @@ There are additional methods:
 
 ## Usage
 
-### Contract
+### Environment setup
 
-Set the following env vars:
+Copy the `.env.example` to `.env` and set the applicable configuration variables for the testing / deployment environment.
 
-```
-RECEIVER
-TO_TOKEN
-KEEPER
-SETTLEMENT
-APP_DATA
-TARGET_SAFE
-MIN_OUT
-```
+### Deploy module
 
-Then run the script to deploy the module:
+Run the script to deploy the module:
 
 ```
-forge script ./script/COWFeeModule.s.sol \
+forge script ./script/DeployCOWFeeModule.s.sol \
   --rpc-url <rpc> \
   --broadcast
 ```
@@ -67,10 +58,12 @@ Options:
 #### Directly
 
 ```sh
+source .env
+
 yarn ts-node index.ts \
   --network mainnet \
   --max-orders 250 \
-  --rpc-url https://eth.llamarpc.com \
+  --rpc-url $RPC_URL \
   --buy-amount-slippage-bps 100 \
   --module <module-address> \
   --token-list-strategy chain \
@@ -80,15 +73,19 @@ yarn ts-node index.ts \
 #### Docker
 
 ```sh
+source .env
+
 # build the docker file
 docker build -t cow-fee .
+
 # run the container
 docker run --rm \
   -e PRIVATE_KEY=$PRIVATE_KEY \
   cow-fee \
+  --env-file .env \
   --network mainnet \
   --max-orders 250 \
-  --rpc-url https://eth.llamarpc.com \
+  --rpc-url $RPC_URL \
   --buy-amount-slippage-bps 100 \
   --module <module-address> \
   --token-list-strategy chain \
@@ -111,6 +108,7 @@ Use the safe UI settings page to disable the module.
 
 ### Tests
 
-```
-$ forge test -vvv --rpc-url https://eth.llamarpc.com
+```sh
+source .env
+forge test -vvv --rpc-url $RPC_URL
 ```
