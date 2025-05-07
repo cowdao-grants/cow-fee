@@ -44,15 +44,19 @@ contract COWFeeModuleTest is Test {
         ISafe(targetSafe).enableModule(address(module));
     }
 
-    function testAuth() external {
+    function testAuthApprove() external {
         address[] memory tokens = new address[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
         module.approve(tokens);
+    }
 
+    function testAuthRevoke() external {
         COWFeeModule.Revocation[] memory revocations = new COWFeeModule.Revocation[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
         module.revoke(revocations);
+    }
 
+    function testAuthDrip() external {
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](0);
         address[] memory approveTokens = new address[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
