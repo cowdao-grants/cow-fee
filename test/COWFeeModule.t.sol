@@ -29,9 +29,10 @@ contract COWFeeModuleTest is Test {
     address vaultRelayer;
     address receiver = makeAddr("receiver");
     uint256 minOut = 0.01 ether;
+    bytes32 appData = bytes32(0);
 
     function setUp() external {
-        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0), receiver, minOut);
+        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, appData, receiver, minOut);
         vaultRelayer = module.vaultRelayer();
         mockToken = new MockERC20();
 
