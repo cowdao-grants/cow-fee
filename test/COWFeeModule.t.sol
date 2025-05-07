@@ -1,6 +1,6 @@
-import { COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20 } from "src/COWFeeModule.sol";
-import { Test, Vm } from "forge-std/Test.sol";
-import { console } from "forge-std/console.sol";
+import {COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20} from "src/COWFeeModule.sol";
+import {Test, Vm} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 
 contract MockERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
@@ -23,12 +23,14 @@ contract COWFeeModuleTest is Test {
     address constant targetSafe = 0x423cEc87f19F0778f549846e0801ee267a917935;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     IGPv2Settlement constant settlement = IGPv2Settlement(0x9008D19f58AAbD9eD0D60971565AA8510560ab41);
+
     address vaultRelayer;
     address receiver = makeAddr("receiver");
     uint256 minOut = 0.01 ether;
+    bytes32 appData = bytes32(0);
 
     function setUp() external {
-        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, bytes32(0), receiver, minOut);
+        module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, appData, receiver, minOut);
         vaultRelayer = module.vaultRelayer();
         mockToken = new MockERC20();
 
@@ -41,19 +43,28 @@ contract COWFeeModuleTest is Test {
         ISafe(targetSafe).enableModule(address(module));
     }
 
-    function testAuth() external {
+    function testAuthApprove() external {
         address[] memory tokens = new address[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
         module.approve(tokens);
+    }
 
+    function testAuthRevoke() external {
         COWFeeModule.Revocation[] memory revocations = new COWFeeModule.Revocation[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
         module.revoke(revocations);
+    }
 
+    function testAuthDrip() external {
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](0);
         address[] memory approveTokens = new address[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
         module.drip(approveTokens, swapTokens);
+    }
+
+    function testAuthSetMinOut() external {
+        vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
+        module.setMinOut(1);
     }
 
     function testApprove() external {
@@ -79,7 +90,7 @@ contract COWFeeModuleTest is Test {
         assertEq(currentAllowance, type(uint256).max, "current allowance not max");
 
         COWFeeModule.Revocation[] memory revocations = new COWFeeModule.Revocation[](1);
-        revocations[0] = COWFeeModule.Revocation({ token: address(mockToken), spender: address(vaultRelayer) });
+        revocations[0] = COWFeeModule.Revocation({token: address(mockToken), spender: address(vaultRelayer)});
         vm.prank(keeper);
         module.revoke(revocations);
 
@@ -113,7 +124,7 @@ contract COWFeeModuleTest is Test {
         bytes memory preSignature = abi.encodePacked(orderHash, address(settlement), nextValidTo);
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
-        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: minOut, sellAmount: 100 ether });
+        swapTokens[0] = COWFeeModule.SwapToken({token: address(mockToken), buyAmount: minOut, sellAmount: 100 ether});
 
         address[] memory approveTokens = new address[](1);
         approveTokens[0] = address(mockToken);
@@ -154,7 +165,7 @@ contract COWFeeModuleTest is Test {
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
         swapTokens[0] =
-            COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: buyAmount, sellAmount: sellAmount });
+            COWFeeModule.SwapToken({token: address(mockToken), buyAmount: buyAmount, sellAmount: sellAmount});
 
         address[] memory approveTokens = new address[](0);
 
