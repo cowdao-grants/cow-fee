@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
-import { ISafe } from "./interfaces/ISafe.sol";
-import { IGPv2Settlement } from "./interfaces/IGPv2Settlement.sol";
-import { IERC20 } from "./interfaces/IERC20.sol";
-import { GPv2Order } from "./libraries/GPv2Order.sol";
+import {ISafe} from "./interfaces/ISafe.sol";
+import {IGPv2Settlement} from "./interfaces/IGPv2Settlement.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {GPv2Order} from "./libraries/GPv2Order.sol";
 
 contract COWFeeModule {
     error OnlyKeeper();
     error BuyAmountTooSmall();
+    error MinOutZero();
 
     // not public to save deployment costs
     ISafe public immutable targetSafe;
@@ -19,7 +20,7 @@ contract COWFeeModule {
     IGPv2Settlement public immutable settlement;
     address public immutable vaultRelayer;
     address public immutable receiver;
-    uint256 public immutable minOut;
+    uint256 public minOut;
 
     struct Revocation {
         address token;
@@ -56,6 +57,13 @@ contract COWFeeModule {
         domainSeparator = settlement.domainSeparator();
         appData = _appData;
         receiver = _receiver;
+        minOut = _minOut;
+    }
+
+    /// @notice Update the minimum output amount
+    /// @param _minOut The new minimum output amount
+    function setMinOut(uint256 _minOut) external onlyKeeper {
+        if (_minOut == 0) revert MinOutZero();
         minOut = _minOut;
     }
 
