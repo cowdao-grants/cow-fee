@@ -154,7 +154,7 @@ contract COWFeeModuleTest is Test {
         assertEq(orderUid, preSignature, "orderUid not correct");
     }
 
-    function testDripMinOut() external {
+    function testDripWithBuyAmountTooSmall() external {
         deal(address(mockToken), address(settlement), 100 ether);
 
         uint256 sellAmount = 100 ether;
@@ -172,12 +172,27 @@ contract COWFeeModuleTest is Test {
     }
 
     function testDripWeth() external {
-        deal(WETH, address(settlement), minOut);
+        // GIVEN: WETH balance is minOut
+        uint256 wethBalance = minOut;
+        deal(WETH, address(settlement), wethBalance);
+
+        // GIVEN: No approve tokens
+        address[] memory approveTokens = new address[](0);
+
+        // GIVEN: No swap tokens
+        COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](0);
+
+        // GIVEN: Native balance is 0 in settlement contract
+        vm.deal(address(settlement), 0);
+
         uint256 balanceBefore = IERC20(WETH).balanceOf(receiver);
 
+        // WHEN: drip is called
         vm.prank(keeper);
-        module.drip(new address[](0), new COWFeeModule.SwapToken[](0));
+        module.drip(approveTokens, swapTokens);
+
         uint256 balanceAfter = IERC20(WETH).balanceOf(receiver);
-        assertEq(balanceAfter - balanceBefore, minOut, "drip didnt transfer weth as expected");
+
+        assertEq(balanceAfter - balanceBefore, wethBalance, "drip didn't transfer weth as expected");
     }
 }
