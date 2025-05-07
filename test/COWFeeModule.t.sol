@@ -67,6 +67,21 @@ contract COWFeeModuleTest is Test {
         module.setMinOut(1);
     }
 
+    function testSetMinOut() external {
+        uint256 newMinOut = 0.02 ether;
+        assertNotEq(module.minOut(), newMinOut, "minOut not 0");
+
+        vm.prank(keeper);
+        module.setMinOut(newMinOut);
+        assertEq(module.minOut(), newMinOut, "minOut hasn't changed to the new value");
+    }
+
+    function testSetMinOutZero() external {
+        vm.expectRevert(COWFeeModule.MinOutZero.selector);
+        vm.prank(keeper);
+        module.setMinOut(0);
+    }
+
     function testApprove() external {
         uint256 currentAllowance = mockToken.allowance(address(settlement), address(vaultRelayer));
         assertEq(currentAllowance, 0, "current allowance not 0");
