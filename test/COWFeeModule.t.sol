@@ -1,6 +1,9 @@
-import { COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20 } from "src/COWFeeModule.sol";
-import { Test, Vm } from "forge-std/Test.sol";
-import { console } from "forge-std/console.sol";
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.8.25;
+
+import {COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20} from "src/COWFeeModule.sol";
+import {Test, Vm} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 
 contract MockERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
@@ -79,7 +82,7 @@ contract COWFeeModuleTest is Test {
         assertEq(currentAllowance, type(uint256).max, "current allowance not max");
 
         COWFeeModule.Revocation[] memory revocations = new COWFeeModule.Revocation[](1);
-        revocations[0] = COWFeeModule.Revocation({ token: address(mockToken), spender: address(vaultRelayer) });
+        revocations[0] = COWFeeModule.Revocation({token: address(mockToken), spender: address(vaultRelayer)});
         vm.prank(keeper);
         module.revoke(revocations);
 
@@ -113,7 +116,7 @@ contract COWFeeModuleTest is Test {
         bytes memory preSignature = abi.encodePacked(orderHash, address(settlement), nextValidTo);
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
-        swapTokens[0] = COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: minOut, sellAmount: 100 ether });
+        swapTokens[0] = COWFeeModule.SwapToken({token: address(mockToken), buyAmount: minOut, sellAmount: 100 ether});
 
         address[] memory approveTokens = new address[](1);
         approveTokens[0] = address(mockToken);
@@ -154,7 +157,7 @@ contract COWFeeModuleTest is Test {
 
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](1);
         swapTokens[0] =
-            COWFeeModule.SwapToken({ token: address(mockToken), buyAmount: buyAmount, sellAmount: sellAmount });
+            COWFeeModule.SwapToken({token: address(mockToken), buyAmount: buyAmount, sellAmount: sellAmount});
 
         address[] memory approveTokens = new address[](0);
 
