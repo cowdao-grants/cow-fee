@@ -4,6 +4,7 @@ pragma solidity ^0.8;
 import {ISafe} from "./interfaces/ISafe.sol";
 import {IGPv2Settlement} from "./interfaces/IGPv2Settlement.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IWrappedNativeToken} from "./interfaces/IWrappedNativeToken.sol";
 import {GPv2Order} from "./libraries/GPv2Order.sol";
 
 contract COWFeeModule {
@@ -12,7 +13,7 @@ contract COWFeeModule {
 
     // not public to save deployment costs
     ISafe public immutable targetSafe;
-    address public immutable toToken;
+    address public immutable wrappedNativeToken;
     address public immutable keeper;
     bytes32 public immutable domainSeparator;
     bytes32 public immutable appData;
@@ -42,7 +43,7 @@ contract COWFeeModule {
     constructor(
         address _settlement,
         address _targetSafe,
-        address _toToken,
+        address _wrappedNativeToken,
         address _keeper,
         bytes32 _appData,
         address _receiver,
@@ -51,7 +52,7 @@ contract COWFeeModule {
         settlement = IGPv2Settlement(_settlement);
         vaultRelayer = settlement.vaultRelayer();
         targetSafe = ISafe(_targetSafe);
-        toToken = _toToken;
+        wrappedNativeToken = _wrappedNativeToken;
         keeper = _keeper;
         domainSeparator = settlement.domainSeparator();
         appData = _appData;
@@ -89,20 +90,28 @@ contract COWFeeModule {
     /// @notice Commit presignatures for sell orders of given tokens of given amounts.
     ///         Optionally, also approve the tokens to be spent to the vault relayer.
     function drip(address[] calldata _approveTokens, SwapToken[] calldata _swapTokens) external onlyKeeper {
-        // we need a special interaction for toToken because cowswap wont quote a swap where buy
-        // and sell tokens are identical.
-        uint256 toTokenBalance = IERC20(toToken).balanceOf(address(settlement));
+        // Get native token balance.
+        // We wrap the native token, as long as its above the minOut (requires an additional interaction)
+        uint256 nativeBalance = address(settlement).balance;
+        bool hasToWrappedNativeToken = nativeBalance > minOut;
 
-        // determine if we need a toToken transfer interaction
-        bool hasToTokenTransfer = toTokenBalance >= minOut;
-        uint256 len = _approveTokens.length + _swapTokens.length + (hasToTokenTransfer ? 1 : 0);
+        // Wrapped native token is handled differently, because its the buyToken, we just do a normal transfer (requires an additional interaction)
+        // We account for the native balance (only if we wrap it)
+        IWrappedNativeToken wrappedNativeTokenContract = IWrappedNativeToken(wrappedNativeToken);
+        uint256 wrappedNativeBalance =
+            (hasToWrappedNativeToken ? nativeBalance : 0) + wrappedNativeTokenContract.balanceOf(address(settlement));
+
+        // Determine if we need a wrappedNativeToken transfer interaction
+        bool hasToTransferWrappedNativeToken = wrappedNativeBalance >= minOut;
+        uint256 len = _approveTokens.length + _swapTokens.length + (hasToWrappedNativeToken ? 1 : 0)
+            + (hasToTransferWrappedNativeToken ? 1 : 0);
 
         IGPv2Settlement.InteractionData[] memory approveAndDripInteractions = new IGPv2Settlement.InteractionData[](len);
         _approveInteractions(_approveTokens, approveAndDripInteractions);
 
         GPv2Order.Data memory order = GPv2Order.Data({
             sellToken: IERC20(address(0)),
-            buyToken: IERC20(toToken),
+            buyToken: wrappedNativeTokenContract,
             receiver: receiver,
             sellAmount: 0,
             buyAmount: 0,
@@ -135,12 +144,21 @@ contract COWFeeModule {
             }
         }
 
-        // add toToken direct transfer interaction
-        if (hasToTokenTransfer) {
+        // Wrap native token
+        if (hasToWrappedNativeToken) {
+            approveAndDripInteractions[len - 2] = IGPv2Settlement.InteractionData({
+                to: wrappedNativeToken,
+                value: nativeBalance,
+                callData: abi.encodeCall(IWrappedNativeToken.deposit, ())
+            });
+        }
+
+        // Transfer wrapped native token to receiver
+        if (hasToTransferWrappedNativeToken) {
             approveAndDripInteractions[len - 1] = IGPv2Settlement.InteractionData({
-                to: toToken,
+                to: wrappedNativeToken,
                 value: 0,
-                callData: abi.encodeCall(IERC20.transfer, (receiver, toTokenBalance))
+                callData: abi.encodeCall(IERC20.transfer, (receiver, wrappedNativeBalance))
             });
         }
 
