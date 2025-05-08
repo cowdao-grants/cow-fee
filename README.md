@@ -108,6 +108,5 @@ Use the safe UI settings page to disable the module.
 ### Tests
 
 ```sh
-source .env
-forge test -vvv --rpc-url $RPC_URL
+forge test -vvv --rpc-url wss://mainnet.gateway.tenderly.co
 ```
