@@ -1,4 +1,5 @@
-pragma solidity 0.8.25;
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8;
 
 import {Script} from "forge-std/Script.sol";
 import {COWFeeModule, ISafe} from "src/COWFeeModule.sol";
