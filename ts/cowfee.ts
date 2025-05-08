@@ -1,23 +1,16 @@
-import { BigNumber, ContractTransaction, ethers } from 'ethers';
-import {
-  IConfig,
-  getMulticall3,
-  getOrderbookApi,
-  networkSpecificConfigs,
-} from './common';
-import { getTokenBalances } from './explorer-apis';
-import { erc20Abi, moduleAbi } from './abi';
+import { BigNumber, ContractTransaction, ethers } from "ethers";
+import { IConfig, getMulticall3, getOrderbookApi } from "./common";
+import { getTokenBalances } from "./explorer-apis";
+import { erc20Abi, moduleAbi } from "./abi";
 import {
   BuyTokenDestination,
-  OrderBookApi,
   OrderKind,
   OrderQuoteResponse,
   OrderQuoteSideKindSell,
   SellTokenSource,
   SigningScheme,
-  SupportedChainId,
-} from '@cowprotocol/cow-sdk';
-import { MetadataApi } from '@cowprotocol/app-data';
+} from "@cowprotocol/cow-sdk";
+import { MetadataApi } from "@cowprotocol/app-data";
 
 const ABI_CODER = new ethers.utils.AbiCoder();
 
@@ -29,14 +22,14 @@ const getBalances = async (
   const Multicall3 = getMulticall3(provider);
   const balanceOfCalldata = new ethers.utils.Interface(
     erc20Abi
-  ).encodeFunctionData('balanceOf', [address]);
+  ).encodeFunctionData("balanceOf", [address]);
   const cds = tokens.map((token) => ({
     target: token,
     callData: balanceOfCalldata,
   }));
   const balancesRet = await Multicall3.tryAggregate(false, cds);
   const balances = balancesRet.map((r: any) =>
-    r.success ? ABI_CODER.decode(['uint'], r.returnData)[0] : BigNumber.from(0)
+    r.success ? ABI_CODER.decode(["uint"], r.returnData)[0] : BigNumber.from(0)
   ) as BigNumber[];
   return balances;
 };
@@ -50,7 +43,7 @@ const getAllowances = async (
   const Multicall3 = getMulticall3(provider);
   const allowanceCalldata = new ethers.utils.Interface(
     erc20Abi
-  ).encodeFunctionData('allowance', [owner, spender]);
+  ).encodeFunctionData("allowance", [owner, spender]);
   const allowancesRet = await Multicall3.tryAggregate(
     false,
     tokens.map((token) => ({
@@ -59,7 +52,7 @@ const getAllowances = async (
     }))
   );
   const allowances = allowancesRet.map((r: any) =>
-    r.success ? ABI_CODER.decode(['uint'], r.returnData)[0] : BigNumber.from(0)
+    r.success ? ABI_CODER.decode(["uint"], r.returnData)[0] : BigNumber.from(0)
   ) as BigNumber[];
   return allowances;
 };
@@ -102,20 +95,20 @@ export const getTokensToSwap = async (
         sellToken: token.address,
         sellAmountBeforeFee: token.balance.toString(),
         kind: OrderQuoteSideKindSell.SELL,
-        buyToken: config.buyToken,
+        buyToken: config.wrappedNativeToken,
         from: config.gpv2Settlement,
       })
     )
   );
   console.log(
-    'total tokens prefilter',
+    "total tokens prefilter",
     unfilteredWithBalanceAndAllowance.length
   );
   const quotesFiltered = unfilteredWithBalanceAndAllowance
     .map((token, i) => ({
       ...token,
       buyAmount: BigNumber.from(
-        (quotes[i].status === 'fulfilled' &&
+        (quotes[i].status === "fulfilled" &&
           (quotes[i] as PromiseFulfilledResult<OrderQuoteResponse>).value.quote
             .buyAmount) ||
           0
@@ -123,9 +116,9 @@ export const getTokensToSwap = async (
         .mul(10000 - config.buyAmountSlippageBps)
         .div(10000),
     }))
-    .filter((_, i) => quotes[i].status === 'fulfilled');
+    .filter((_, i) => quotes[i].status === "fulfilled");
   console.log(
-    'total tokens after filtering by quotes api',
+    "total tokens after filtering by quotes api",
     quotesFiltered.length
   );
 
@@ -133,20 +126,20 @@ export const getTokensToSwap = async (
   const minOutFiltered = quotesFiltered.filter((token) =>
     BigNumber.from(token.buyAmount).gt(config.minOut)
   );
-  console.log('total tokens after filtering by minOut', minOutFiltered.length);
+  console.log("total tokens after filtering by minOut", minOutFiltered.length);
   return minOutFiltered;
 };
 
 // get COWFeeModule appData
 export const getAppData = async () => {
   const appDataDoc = {
-    appCode: 'CoWFeeModule',
-    environment: 'prod',
-    version: '1.1.0',
+    appCode: "CoWFeeModule",
+    environment: "prod",
+    version: "1.1.0",
     metadata: {},
   };
   const metadataApi = new MetadataApi();
-  const { cid, appDataHex, appDataContent } = await metadataApi.appDataToCid(
+  const { cid, appDataHex, appDataContent } = await metadataApi.getAppDataInfo(
     appDataDoc
   );
   return { cid, appDataHex, appDataContent };
@@ -176,39 +169,39 @@ export const swapTokens = async (
     toSwap.map((token) =>
       orderBookApi.sendOrder({
         sellToken: token.address,
-        buyToken: config.buyToken,
+        buyToken: config.wrappedNativeToken,
         sellAmount: token.balance.toString(),
         buyAmount: token.buyAmount.toString(),
         validTo: nextValidTo,
         appData: appDataContent,
         appDataHash: appDataHex,
-        feeAmount: '0',
+        feeAmount: "0",
         kind: OrderKind.SELL,
         partiallyFillable: true,
         sellTokenBalance: SellTokenSource.ERC20,
         buyTokenBalance: BuyTokenDestination.ERC20,
         signingScheme: SigningScheme.PRESIGN,
-        signature: '0x',
+        signature: "0x",
         from: config.gpv2Settlement,
         receiver: config.receiver,
       })
     )
   );
   console.log(
-    'failed',
+    "failed",
     orders
-      .filter((x) => x.status === 'rejected')
+      .filter((x) => x.status === "rejected")
       .map((x) => (x as PromiseRejectedResult).reason)
   );
   console.log(
-    'orderIds',
+    "orderIds",
     orders
-      .filter((x) => x.status === 'fulfilled')
+      .filter((x) => x.status === "fulfilled")
       .map((x) => (x as PromiseFulfilledResult<string>).value)
   );
   // only execute drip for successfully created orders
   const toActuallySwap = toSwap.filter(
-    (x, idx) => orders[idx].status === 'fulfilled'
+    (x, idx) => orders[idx].status === "fulfilled"
   );
 
   // if it filtered out to 0 tokens, dont execute empty approvals and drip
@@ -232,7 +225,7 @@ export const swapTokens = async (
     // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
     { nonce: await signerWithProvider.getTransactionCount() }
   );
-  console.log('dripTx', dripTx.hash);
+  console.log("dripTx", dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)
     throw new Error(`drip failed: ${dripTxReceipt.transactionHash}`);

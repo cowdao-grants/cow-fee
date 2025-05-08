@@ -1,23 +1,23 @@
-import { OrderBookApi, SupportedChainId } from '@cowprotocol/cow-sdk';
-import { ethers } from 'ethers';
-import { multicall3Abi } from './abi';
+import { OrderBookApi, SupportedChainId } from "@cowprotocol/cow-sdk";
+import { ethers } from "ethers";
+import { multicall3Abi } from "./abi";
 
 export const networkSpecificConfigs = {
   mainnet: {
-    rpcUrl: 'https://eth.llamarpc.com',
-    explorer: 'https://explorer.cow.fi',
+    rpcUrl: "https://eth.llamarpc.com",
+    explorer: "https://explorer.cow.fi",
   },
   gnosis: {
-    rpcUrl: 'https://1rpc.io/gnosis',
-    explorer: 'https://explorer.cow.fi/gc',
+    rpcUrl: "https://1rpc.io/gnosis",
+    explorer: "https://explorer.cow.fi/gc",
   },
   arbitrum: {
-    rpcUrl: 'https://arb1.arbitrum.io/rpc',
-    explorer: 'https://explorer.cow.fi/arb1',
+    rpcUrl: "https://arb1.arbitrum.io/rpc",
+    explorer: "https://explorer.cow.fi/arb1",
   },
   base: {
-    rpcUrl: 'https://base.llamarpc.com',
-    explorer: 'https://explorer.cow.fi/base',
+    rpcUrl: "https://base.llamarpc.com",
+    explorer: "https://explorer.cow.fi/base",
   },
 };
 
@@ -30,29 +30,29 @@ export interface IConfig {
   vaultRelayer: string;
   rpcUrl: string;
   network: keyof typeof networkSpecificConfigs;
-  buyToken: string;
+  wrappedNativeToken: string;
   minOut: bigint;
   targetSafe: string;
   receiver: string;
   buyAmountSlippageBps: number;
   keeper: string;
   appData: string;
-  tokenListStrategy: 'explorer' | 'chain';
+  tokenListStrategy: "explorer" | "chain";
   lookbackRange: number;
 }
 
 const toChainId = (network: keyof typeof networkSpecificConfigs) => {
   switch (network) {
-    case 'mainnet': {
+    case "mainnet": {
       return SupportedChainId.MAINNET;
     }
-    case 'gnosis': {
+    case "gnosis": {
       return SupportedChainId.GNOSIS_CHAIN;
     }
-    case 'arbitrum': {
+    case "arbitrum": {
       return SupportedChainId.ARBITRUM_ONE;
     }
-    case 'base': {
+    case "base": {
       return SupportedChainId.BASE;
     }
     default: {
@@ -66,19 +66,19 @@ export const getOrderbookApi = (config: IConfig) => {
     chainId: toChainId(config.network),
     limiterOpts: {
       tokensPerInterval: 5,
-      interval: 'second',
+      interval: "second",
     },
     backoffOpts: {
       numOfAttempts: 5,
       maxDelay: Infinity,
-      jitter: 'none',
+      jitter: "none",
     },
   });
 };
 
 export const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
   return new ethers.Contract(
-    '0xcA11bde05977b3631167028862bE2a173976CA11',
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
     multicall3Abi,
     provider
   );

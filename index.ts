@@ -1,9 +1,9 @@
-import { ethers } from 'ethers';
-import { formatUnits } from 'ethers/lib/utils';
-import { getTokensToSwap, swapTokens } from './ts/cowfee';
-import { IConfig, networkSpecificConfigs } from './ts/common';
-import { Command, Option } from '@commander-js/extra-typings';
-import { erc20Abi, moduleAbi } from './ts/abi';
+import { ethers } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
+import { getTokensToSwap, swapTokens } from "./ts/cowfee";
+import { IConfig, networkSpecificConfigs } from "./ts/common";
+import { Command, Option } from "@commander-js/extra-typings";
+import { erc20Abi, moduleAbi } from "./ts/abi";
 
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
@@ -16,48 +16,48 @@ const readConfig = async (): Promise<
     return value;
   };
 
-  const privateKey = readEnv('PRIVATE_KEY');
+  const privateKey = readEnv("PRIVATE_KEY");
 
   const program = new Command()
-    .name('cow-fee')
+    .name("cow-fee")
     .addOption(
-      new Option('--network <network>').choices([
-        'mainnet',
-        'gnosis',
-        'arbitrum',
-        'base',
+      new Option("--network <network>").choices([
+        "mainnet",
+        "gnosis",
+        "arbitrum",
+        "base",
       ] as const)
     )
-    .addOption(new Option('--rpc-url <rpc-url>'))
+    .addOption(new Option("--rpc-url <rpc-url>"))
     .addOption(
       new Option(
-        '--max-orders <max-orders>',
-        'Maximum number of orders to place in single drip call'
+        "--max-orders <max-orders>",
+        "Maximum number of orders to place in single drip call"
       )
         .default(250)
         .argParser((x) => +x)
     )
     .addOption(
       new Option(
-        '--buy-amount-slippage-bps <buy-amount-slippage-bps>',
-        'Tolerance to add to the quoted buyAmount'
+        "--buy-amount-slippage-bps <buy-amount-slippage-bps>",
+        "Tolerance to add to the quoted buyAmount"
       )
         .default(100)
         .argParser((x) => +x)
     )
-    .requiredOption('--module <module>', 'COWFeeModule address')
+    .requiredOption("--module <module>", "COWFeeModule address")
     .addOption(
       new Option(
-        '--token-list-strategy <strategy>',
-        'Strategy to use to get the list of tokens to swap on'
+        "--token-list-strategy <strategy>",
+        "Strategy to use to get the list of tokens to swap on"
       )
-        .choices(['explorer', 'chain'] as const)
-        .default('explorer' as 'explorer' | 'chain')
+        .choices(["explorer", "chain"] as const)
+        .default("explorer" as "explorer" | "chain")
     )
     .addOption(
       new Option(
-        '--lookback-range <n>',
-        'Last <n> number of blocks to check the `Trade` events for'
+        "--lookback-range <n>",
+        "Last <n> number of blocks to check the `Trade` events for"
       )
         .default(1000)
         .argParser((x) => +x)
@@ -74,7 +74,7 @@ const readConfig = async (): Promise<
     lookbackRange,
     tokenListStrategy,
   } = options;
-  const network = selectedNetwork || 'mainnet';
+  const network = selectedNetwork || "mainnet";
 
   const { rpcUrl: defaultRpcUrl } =
     networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
@@ -84,7 +84,7 @@ const readConfig = async (): Promise<
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
   const [
     receiver,
-    toToken,
+    wrappedNativeToken,
     vaultRelayer,
     gpv2Settlement,
     keeper,
@@ -93,7 +93,7 @@ const readConfig = async (): Promise<
     minOut,
   ] = await Promise.all([
     moduleContract.receiver(),
-    moduleContract.toToken(),
+    moduleContract.wrappedNativeToken(),
     moduleContract.vaultRelayer(),
     moduleContract.settlement(),
     moduleContract.keeper(),
@@ -105,7 +105,7 @@ const readConfig = async (): Promise<
     (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
     keeper.toLowerCase()
   ) {
-    throw new Error('Keeper key mismatch');
+    throw new Error("Keeper key mismatch");
   }
 
   return [
@@ -118,7 +118,7 @@ const readConfig = async (): Promise<
       vaultRelayer,
       rpcUrl,
       network,
-      buyToken: toToken,
+      wrappedNativeToken,
       minOut,
       receiver,
       buyAmountSlippageBps,
@@ -140,7 +140,7 @@ export const dripItAll = async () => {
 
   const tokensToSwap = await getTokensToSwap(config, provider);
   console.log(
-    'tokensToSwap',
+    "tokensToSwap",
     tokensToSwap.map((token) => [
       token.symbol,
       token.address,
@@ -165,7 +165,7 @@ export const dripItAll = async () => {
     ethers.BigNumber.from(0)
   );
   const buyTokenContract = new ethers.Contract(
-    config.buyToken,
+    config.wrappedNativeToken,
     erc20Abi,
     provider
   );
