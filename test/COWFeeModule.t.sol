@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.25;
+pragma solidity ^0.8;
 
 import {COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20} from "src/COWFeeModule.sol";
 import {Test, Vm} from "forge-std/Test.sol";
