@@ -82,7 +82,6 @@ docker build -t cow-fee .
 docker run --rm \
   -e PRIVATE_KEY=$PRIVATE_KEY \
   cow-fee \
-  --env-file .env \
   --network mainnet \
   --max-orders 250 \
   --rpc-url $RPC_URL \
