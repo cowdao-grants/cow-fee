@@ -259,14 +259,14 @@ contract COWFeeModuleTest is Test {
     }
 
     function testDripBothEthAndWeth() external {
-        // GIVEN: Ether balance is 0
+        // GIVEN: Ether balance is minOut
         uint256 ethBalance = minOut;
 
         // GIVEN: WETH balance is minOut
         uint256 wethBalance = minOut;
 
         // WHEN: drip is called
-        // THEN: WETH balance doesn't change
+        // THEN: WETH balance is increased by 2 * minOut
         uint256 expectedWethBalanceChange = 2 * minOut;
         dripWithBalancesAndAssertBalanceChange(
             ethBalance,
