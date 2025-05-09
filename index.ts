@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 import { getTokensToSwap, swapTokens } from "./ts/cowfee";
-import { IConfig, networkSpecificConfigs } from "./ts/common";
+import { IConfig, networkSpecificConfigs, toChainId } from "./ts/common";
 import { Command, Option } from "@commander-js/extra-typings";
 import { erc20Abi, moduleAbi } from "./ts/abi";
 
@@ -64,7 +64,14 @@ const readConfig = async (): Promise<
       )
         .default(1000)
         .argParser((x) => +x)
+    )
+    .addOption(
+      new Option(
+        "-c, --confirm-drip",
+        "Ask for confirmation before dripping"
+      ).default(false)
     );
+
   program.parse();
 
   const options = program.opts();
@@ -76,6 +83,7 @@ const readConfig = async (): Promise<
     module,
     lookbackRange,
     tokenListStrategy,
+    confirmDrip,
   } = options;
   const network = selectedNetwork || "mainnet";
 
@@ -83,6 +91,15 @@ const readConfig = async (): Promise<
     networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
   const rpcUrl = options.rpcUrl || defaultRpcUrl;
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+
+  // Check if the RPC provider chain matches the expected network
+  const providerChainId = (await provider.getNetwork()).chainId;
+  const expectedChainId = toChainId(network);
+  if (providerChainId !== expectedChainId) {
+    throw new Error(
+      `Provider chain ID ${providerChainId} does not match expected chain ID ${expectedChainId} for network ${network}`
+    );
+  }
 
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
   const [
@@ -112,8 +129,11 @@ const readConfig = async (): Promise<
     );
   }
 
+  const chainId = toChainId(network);
+
   return [
     {
+      chainId,
       privateKey,
       options,
       maxOrders,
@@ -131,6 +151,7 @@ const readConfig = async (): Promise<
       tokenListStrategy,
       lookbackRange,
       targetSafe,
+      confirmDrip,
     },
     provider,
   ];

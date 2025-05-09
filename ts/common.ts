@@ -1,6 +1,7 @@
 import { OrderBookApi, SupportedChainId } from "@cowprotocol/cow-sdk";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { multicall3Abi } from "./abi";
+import readline from "readline";
 
 export const networkSpecificConfigs = {
   mainnet: {
@@ -26,6 +27,7 @@ export const networkSpecificConfigs = {
 };
 
 export interface IConfig {
+  chainId: SupportedChainId;
   privateKey: string;
   options: object;
   maxOrders: number;
@@ -43,9 +45,10 @@ export interface IConfig {
   appData: string;
   tokenListStrategy: "explorer" | "chain";
   lookbackRange: number;
+  confirmDrip: boolean;
 }
 
-const toChainId = (network: keyof typeof networkSpecificConfigs) => {
+export function toChainId(network: keyof typeof networkSpecificConfigs) {
   switch (network) {
     case "mainnet": {
       return SupportedChainId.MAINNET;
@@ -66,11 +69,11 @@ const toChainId = (network: keyof typeof networkSpecificConfigs) => {
       throw new Error(`Unsupported network ${network}`);
     }
   }
-};
+}
 
-export const getOrderbookApi = (config: IConfig) => {
+export const getOrderbookApi = (chainId: SupportedChainId) => {
   return new OrderBookApi({
-    chainId: toChainId(config.network),
+    chainId,
     limiterOpts: {
       tokensPerInterval: 5,
       interval: "second",
@@ -90,3 +93,17 @@ export const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
     provider
   );
 };
+
+export async function confirmMessage(message: string) {
+  const readLineInterface = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise<boolean>((resolve) => {
+    readLineInterface.question(message, (answer: string) => {
+      readLineInterface.close();
+      resolve(answer.toLowerCase() === "yes" || answer.toLowerCase() === "y");
+    });
+  });
+}

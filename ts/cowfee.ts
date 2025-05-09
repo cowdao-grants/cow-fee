@@ -1,14 +1,26 @@
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import { IConfig, getMulticall3, getOrderbookApi } from "./common";
+
+import { TransactionRequest } from "@ethersproject/abstract-provider";
+import { Deferrable } from "@ethersproject/properties";
+
+import {
+  IConfig,
+  confirmMessage,
+  getMulticall3,
+  getOrderbookApi,
+} from "./common";
 import { getTokenBalances } from "./explorer-apis";
 import { erc20Abi, moduleAbi } from "./abi";
+
 import {
   BuyTokenDestination,
+  OrderBookApi,
   OrderKind,
   OrderQuoteResponse,
   OrderQuoteSideKindSell,
   SellTokenSource,
   SigningScheme,
+  SupportedChainId,
 } from "@cowprotocol/cow-sdk";
 import { MetadataApi } from "@cowprotocol/app-data";
 
@@ -88,7 +100,7 @@ export const getTokensToSwap = async (
   }));
 
   // filter shitcoins with no liquidity by using the quotes api
-  const orderBookApi = getOrderbookApi(config);
+  const orderBookApi = getOrderbookApi(config.chainId);
   const quotes = await Promise.allSettled(
     unfilteredWithBalanceAndAllowance.map((token) =>
       orderBookApi.getQuote({
@@ -150,20 +162,71 @@ export const swapTokens = async (
   signerWithProvider: ethers.Signer,
   toSwap: Awaited<ReturnType<typeof getTokensToSwap>>
 ) => {
-  const orderBookApi = getOrderbookApi(config);
+  const orderBookApi = getOrderbookApi(config.chainId);
+
   const moduleContract = new ethers.Contract(
     config.module,
     moduleAbi,
     signerWithProvider
   );
 
-  // deterministic next valid to
   const nextValidTo = await moduleContract.nextValidTo();
   const { appDataHex, appDataContent } = await getAppData();
   if (appDataHex.toLowerCase() !== config.appData.toLowerCase()) {
     throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
   }
 
+  const { failedOrders, successfullyPostedOrders, toActuallySwap } =
+    await postOrders(
+      orderBookApi,
+      appDataHex,
+      nextValidTo,
+      appDataContent,
+      config,
+      toSwap
+    );
+
+  console.log("Successfully posted orders:\n", successfullyPostedOrders);
+  if (failedOrders.length > 0) {
+    console.error(
+      `Failed posting orders:\n"`,
+      failedOrders.map((x) => (x as PromiseRejectedResult).reason)
+    );
+  }
+
+  if (toActuallySwap.length === 0) {
+    console.log("No tokens to swap, skipping approvals and drip");
+    return;
+  }
+
+  const toApprove = toActuallySwap
+    .filter((token) => token.needsApproval)
+    .map((token) => token.address);
+
+  const toDrip = toActuallySwap.map((token) => ({
+    token: token.address,
+    sellAmount: token.balance,
+    buyAmount: token.buyAmount,
+  }));
+
+  await drip(
+    config.chainId,
+    moduleContract,
+    signerWithProvider,
+    toApprove,
+    toDrip,
+    config.confirmDrip
+  );
+};
+
+async function postOrders(
+  orderBookApi: OrderBookApi,
+  appDataHex: string,
+  nextValidTo: number,
+  appDataContent: string,
+  config: IConfig,
+  toSwap: Awaited<ReturnType<typeof getTokensToSwap>>
+) {
   // create orders
   const orders = await Promise.allSettled(
     toSwap.map((token) =>
@@ -189,49 +252,77 @@ export const swapTokens = async (
   );
 
   const failedOrders = orders.filter((x) => x.status === "rejected");
-  if (failedOrders.length > 0) {
-    console.error(
-      `Failed posting orders:\n"`,
-      failedOrders.map((x) => (x as PromiseRejectedResult).reason)
-    );
-  }
 
-  console.log(
-    "Successfully posted orders:\n",
-    orders
-      .filter((x) => x.status === "fulfilled")
-      .map((x) => (x as PromiseFulfilledResult<string>).value)
-  );
+  const successfullyPostedOrders = orders
+    .filter((x) => x.status === "fulfilled")
+    .map((x) => (x as PromiseFulfilledResult<string>).value);
 
-  // only execute drip for successfully created orders
+  // filter swaps to only include successfully posted orders
   const toActuallySwap = toSwap.filter(
     (x, idx) => orders[idx].status === "fulfilled"
   );
 
-  // if it filtered out to 0 tokens, dont execute empty approvals and drip
-  // shouldn't really happen, likely some bug
-  if (toActuallySwap.length === 0) return;
+  return { failedOrders, successfullyPostedOrders, toActuallySwap };
+}
 
-  // only execute approvals for tokens that need it
-  const toApprove = toActuallySwap
-    .filter((token) => token.needsApproval)
-    .map((token) => token.address);
-  const toDrip = toActuallySwap.map((token) => ({
-    token: token.address,
-    sellAmount: token.balance,
-    buyAmount: token.buyAmount,
-  }));
-
-  // drip it
-  const dripTx: ContractTransaction = await moduleContract.drip(
+async function drip(
+  chainId: SupportedChainId,
+  moduleContract: ethers.Contract,
+  signerWithProvider: ethers.Signer,
+  toApprove: string[],
+  toDrip: { token: string; sellAmount: BigNumber; buyAmount: BigNumber }[],
+  confirmDrip: boolean
+) {
+  // Estimate gas for drip transaction first
+  const estimatedGas = await moduleContract.estimateGas.drip(
     toApprove,
     toDrip,
-    // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
     { nonce: await signerWithProvider.getTransactionCount() }
+  );
+
+  // Get transaction parameters and calldata
+  const nonce = await signerWithProvider.getTransactionCount();
+  const calldata = moduleContract.interface.encodeFunctionData("drip", [
+    toApprove,
+    toDrip,
+  ]);
+  const to = moduleContract.address;
+  const gasPrice = await signerWithProvider.getGasPrice();
+  const from = await signerWithProvider.getAddress();
+  const value = BigNumber.from(0);
+
+  const txRequest: Deferrable<TransactionRequest> = {
+    from,
+    to,
+    nonce: nonce,
+    gasLimit: estimatedGas,
+    gasPrice: gasPrice,
+    data: calldata,
+    value,
+  };
+  console.log("\nDrip transaction parameters:", {
+    ...txRequest,
+    gasLimit: estimatedGas.toString(),
+    gasPrice: gasPrice.toString(),
+    value: value.toString(),
+  });
+
+  // Ask for confirmation before sending the transaction
+  const confirmation = confirmDrip
+    ? await confirmMessage("\nDo you want to send this transaction? (yes/no): ")
+    : true;
+
+  if (!confirmation) {
+    console.log("All right! Transaction cancelled");
+    return;
+  }
+
+  const dripTx: ContractTransaction = await signerWithProvider.sendTransaction(
+    txRequest
   );
 
   console.log("Drip transaction:", dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)
     throw new Error(`drip failed: ${dripTxReceipt.transactionHash}`);
-};
+}
