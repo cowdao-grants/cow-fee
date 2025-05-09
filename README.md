@@ -31,13 +31,19 @@ Copy the `.env.example` to `.env` and set the applicable configuration variables
 Run the script to deploy the module:
 
 ```sh
+# Dry run the deployment
+forge script ./script/DeployCOWFeeModule.s.sol \
+  --rpc-url <rpc>
+
+# Deploy and verify the contract
+#   Make sure to set the ETHERSCAN_API_KEY environment variable
 forge script ./script/DeployCOWFeeModule.s.sol \
   --rpc-url <rpc> \
-  --broadcast
+  --broadcast --verify
 ```
 
 ### Verify module
-
+To verify the module if the contract is already deployed:
 ```sh
 forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" <settlement> <target-safe> <wrapped-native-token> <keeper> <app-data> <receiver> <min-out>)
 ```
