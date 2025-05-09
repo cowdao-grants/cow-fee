@@ -42,6 +42,17 @@ forge script ./script/DeployCOWFeeModule.s.sol \
 forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" <settlement> <target-safe> <wrapped-native-token> <keeper> <app-data> <receiver> <min-out>)
 ```
 
+### Enable module
+The deployment creates the module, but this module needs to be enabled on the target safe.
+
+One way to do this is to use the [Transaction Builder UI](https://app.safe.global/share/safe-app?appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder) on the target safe.
+1. Select the target safe.
+2. Click on `Use Implementation ABI` to load the ABI automatically.
+3. Select `enableModule` from the dropdown of available functions.
+4. Enter the module address and click on `Add new transaction`
+5. Send batch
+
+
 ### Keeper
 
 Private key for keeper needs to set with `PRIVATE_KEY` environment
@@ -51,7 +62,7 @@ variable.
 Usage: cow-fee [options]
 
 Options:
-  --network <network>                                   (choices: "mainnet", "gnosis", "arbitrum")
+  --network <network>                                   (choices: "mainnet", "gnosis", "arbitrum", "base", "sepolia")
   --rpc-url <rpc-url>
   --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
   --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
