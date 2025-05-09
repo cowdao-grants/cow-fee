@@ -19,6 +19,10 @@ export const networkSpecificConfigs = {
     rpcUrl: "https://base.llamarpc.com",
     explorer: "https://explorer.cow.fi/base",
   },
+  sepolia: {
+    rpcUrl: "https://sepolia.drpc.org",
+    explorer: "https://explorer.cow.fi/sepolia",
+  },
 };
 
 export interface IConfig {
@@ -54,6 +58,9 @@ const toChainId = (network: keyof typeof networkSpecificConfigs) => {
     }
     case "base": {
       return SupportedChainId.BASE;
+    }
+    case "sepolia": {
+      return SupportedChainId.SEPOLIA;
     }
     default: {
       throw new Error(`Unsupported network ${network}`);

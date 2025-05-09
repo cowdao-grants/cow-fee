@@ -101,7 +101,7 @@ export const getTokensToSwap = async (
     )
   );
   console.log(
-    "total tokens prefilter",
+    "Total tokens pre-filter:",
     unfilteredWithBalanceAndAllowance.length
   );
   const quotesFiltered = unfilteredWithBalanceAndAllowance
@@ -118,7 +118,7 @@ export const getTokensToSwap = async (
     }))
     .filter((_, i) => quotes[i].status === "fulfilled");
   console.log(
-    "total tokens after filtering by quotes api",
+    "Total tokens after filtering by quotes api:",
     quotesFiltered.length
   );
 
@@ -126,7 +126,7 @@ export const getTokensToSwap = async (
   const minOutFiltered = quotesFiltered.filter((token) =>
     BigNumber.from(token.buyAmount).gt(config.minOut)
   );
-  console.log("total tokens after filtering by minOut", minOutFiltered.length);
+  console.log("Total tokens after filtering by minOut:", minOutFiltered.length);
   return minOutFiltered;
 };
 
@@ -187,18 +187,22 @@ export const swapTokens = async (
       })
     )
   );
+
+  const failedOrders = orders.filter((x) => x.status === "rejected");
+  if (failedOrders.length > 0) {
+    console.error(
+      `Failed posting orders:\n"`,
+      failedOrders.map((x) => (x as PromiseRejectedResult).reason)
+    );
+  }
+
   console.log(
-    "failed",
-    orders
-      .filter((x) => x.status === "rejected")
-      .map((x) => (x as PromiseRejectedResult).reason)
-  );
-  console.log(
-    "orderIds",
+    "Successfully posted orders:\n",
     orders
       .filter((x) => x.status === "fulfilled")
       .map((x) => (x as PromiseFulfilledResult<string>).value)
   );
+
   // only execute drip for successfully created orders
   const toActuallySwap = toSwap.filter(
     (x, idx) => orders[idx].status === "fulfilled"
@@ -225,7 +229,8 @@ export const swapTokens = async (
     // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
     { nonce: await signerWithProvider.getTransactionCount() }
   );
-  console.log("dripTx", dripTx.hash);
+
+  console.log("Drip transaction:", dripTx.hash);
   const dripTxReceipt = await dripTx.wait();
   if (dripTxReceipt.status === 0)
     throw new Error(`drip failed: ${dripTxReceipt.transactionHash}`);

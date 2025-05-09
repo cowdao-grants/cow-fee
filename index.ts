@@ -5,6 +5,8 @@ import { IConfig, networkSpecificConfigs } from "./ts/common";
 import { Command, Option } from "@commander-js/extra-typings";
 import { erc20Abi, moduleAbi } from "./ts/abi";
 
+const WETH_DECIMALS = 18;
+
 const readConfig = async (): Promise<
   [IConfig, ethers.providers.JsonRpcProvider]
 > => {
@@ -26,6 +28,7 @@ const readConfig = async (): Promise<
         "gnosis",
         "arbitrum",
         "base",
+        "sepolia",
       ] as const)
     )
     .addOption(new Option("--rpc-url <rpc-url>"))
@@ -101,11 +104,12 @@ const readConfig = async (): Promise<
     moduleContract.targetSafe(),
     moduleContract.minOut(),
   ]);
-  if (
-    (await new ethers.Wallet(privateKey).getAddress()).toLowerCase() !==
-    keeper.toLowerCase()
-  ) {
-    throw new Error("Keeper key mismatch");
+  const wallet = new ethers.Wallet(privateKey);
+  const walletAddress = await wallet.getAddress();
+  if (walletAddress.toLowerCase() !== keeper.toLowerCase()) {
+    throw new Error(
+      `The provided private key belongs to ${walletAddress}, which doesn't match the keeper (${keeper})`
+    );
   }
 
   return [
@@ -134,20 +138,20 @@ const readConfig = async (): Promise<
 
 export const dripItAll = async () => {
   const [config, provider] = await readConfig();
-  console.log(config.options);
+  console.log("Config options:\n", config.options);
 
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
   console.log(
-    "tokensToSwap",
-    tokensToSwap.map((token) => [
-      token.symbol,
-      token.address,
-      formatUnits(token.balance, token.decimals),
-      token.buyAmount,
-      token.needsApproval,
-    ])
+    "Tokens to swap:",
+    tokensToSwap.map((token) => ({
+      symbol: token.symbol,
+      address: token.address,
+      balance: formatUnits(token.balance, token.decimals),
+      buyAmount: formatUnits(token.buyAmount, WETH_DECIMALS),
+      needsApproval: token.needsApproval,
+    }))
   );
 
   for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {
@@ -155,7 +159,7 @@ export const dripItAll = async () => {
     try {
       await swapTokens(config, signer, toSwap);
     } catch (err) {
-      console.error(err);
+      console.error("Error dripping:", err);
     }
     break;
   }
