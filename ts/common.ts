@@ -94,15 +94,32 @@ export const getMulticall3 = (provider: ethers.providers.JsonRpcProvider) => {
   );
 };
 
+// Singleton readline interface
+let readLineInterface: readline.Interface | null = null;
+
+function getReadLineInterface() {
+  if (!readLineInterface) {
+    readLineInterface = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+  }
+  return readLineInterface;
+}
+
+function closeReadLineInterface() {
+  if (readLineInterface) {
+    readLineInterface.close();
+    readLineInterface = null;
+  }
+}
+
 export async function confirmMessage(message: string) {
-  const readLineInterface = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = getReadLineInterface();
 
   return new Promise<boolean>((resolve) => {
-    readLineInterface.question(message, (answer: string) => {
-      readLineInterface.close();
+    rl.question(message, (answer: string) => {
+      closeReadLineInterface();
       resolve(answer.toLowerCase() === "yes" || answer.toLowerCase() === "y");
     });
   });
