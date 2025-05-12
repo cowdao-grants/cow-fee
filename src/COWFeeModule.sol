@@ -103,8 +103,8 @@ contract COWFeeModule {
 
         // Determine if we need a wrappedNativeToken transfer interaction
         bool hasToTransferWrappedNativeToken = wrappedNativeBalance >= minOut;
-        uint256 len = _approveTokens.length + _swapTokens.length + (hasToWrapNativeToken ? 1 : 0)
-            + (hasToTransferWrappedNativeToken ? 1 : 0);
+        uint256 len = _approveTokens.length + _swapTokens.length
+            + (hasToWrapNativeToken ? 2 : (hasToTransferWrappedNativeToken ? 1 : 0));
 
         IGPv2Settlement.InteractionData[] memory approveAndDripInteractions = new IGPv2Settlement.InteractionData[](len);
         _approveInteractions(_approveTokens, approveAndDripInteractions);
