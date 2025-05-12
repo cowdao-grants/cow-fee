@@ -93,17 +93,17 @@ contract COWFeeModule {
         // Get native token balance.
         // We wrap the native token, as long as its above the minOut (requires an additional interaction)
         uint256 nativeBalance = address(settlement).balance;
-        bool hasToWrappedNativeToken = nativeBalance >= minOut;
+        bool hasToWrapNativeToken = nativeBalance >= minOut;
 
         // Wrapped native token is handled differently, because its the buyToken, we just do a normal transfer (requires an additional interaction)
         // We account for the native balance (only if we wrap it)
         IWrappedNativeToken wrappedNativeTokenContract = IWrappedNativeToken(wrappedNativeToken);
         uint256 wrappedNativeBalance =
-            (hasToWrappedNativeToken ? nativeBalance : 0) + wrappedNativeTokenContract.balanceOf(address(settlement));
+            (hasToWrapNativeToken ? nativeBalance : 0) + wrappedNativeTokenContract.balanceOf(address(settlement));
 
         // Determine if we need a wrappedNativeToken transfer interaction
         bool hasToTransferWrappedNativeToken = wrappedNativeBalance >= minOut;
-        uint256 len = _approveTokens.length + _swapTokens.length + (hasToWrappedNativeToken ? 1 : 0)
+        uint256 len = _approveTokens.length + _swapTokens.length + (hasToWrapNativeToken ? 1 : 0)
             + (hasToTransferWrappedNativeToken ? 1 : 0);
 
         IGPv2Settlement.InteractionData[] memory approveAndDripInteractions = new IGPv2Settlement.InteractionData[](len);
@@ -145,7 +145,7 @@ contract COWFeeModule {
         }
 
         // Wrap native token
-        if (hasToWrappedNativeToken) {
+        if (hasToWrapNativeToken) {
             approveAndDripInteractions[len - 2] = IGPv2Settlement.InteractionData({
                 to: wrappedNativeToken,
                 value: nativeBalance,
