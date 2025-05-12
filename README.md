@@ -45,7 +45,9 @@ forge script ./script/DeployCOWFeeModule.s.sol \
 ### Verify module
 To verify the module if the contract is already deployed:
 ```sh
-forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" <settlement> <target-safe> <wrapped-native-token> <keeper> <app-data> <receiver> <min-out>)
+source .env
+
+forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" $SETTLEMENT $TARGET_SAFE $WRAPPED_NATIVE_TOKEN $KEEPER $APP_DATA $RECEIVER $MIN_OUT)
 ```
 
 ### Enable module
