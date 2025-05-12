@@ -3,7 +3,6 @@ pragma solidity ^0.8;
 
 import {COWFeeModule, ISafe, IGPv2Settlement, GPv2Order, IERC20} from "src/COWFeeModule.sol";
 import {Test, Vm} from "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 contract MockERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
