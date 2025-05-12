@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.25;
+pragma solidity ^0.8;
 
-import { ISafe } from "./interfaces/ISafe.sol";
-import { IGPv2Settlement } from "./interfaces/IGPv2Settlement.sol";
-import { IERC20 } from "./interfaces/IERC20.sol";
-import { GPv2Order } from "./libraries/GPv2Order.sol";
+import {ISafe} from "./interfaces/ISafe.sol";
+import {IGPv2Settlement} from "./interfaces/IGPv2Settlement.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {GPv2Order} from "./libraries/GPv2Order.sol";
 
 contract COWFeeModule {
     error OnlyKeeper();
