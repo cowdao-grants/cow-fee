@@ -34,8 +34,6 @@ contract COWFeeModuleTest is Test {
         module = new COWFeeModule(address(settlement), targetSafe, WETH, keeper, appData, receiver, minOut);
         vaultRelayer = module.vaultRelayer();
         mockToken = new MockERC20();
-        vm.deal(address(settlement), 0);
-        deal(WETH, address(settlement), 0);
 
         vm.label(address(settlement), "settlement");
         vm.label(address(vaultRelayer), "vaultRelayer");
