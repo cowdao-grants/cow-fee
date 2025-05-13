@@ -7,7 +7,7 @@ import {COWFeeModule, ISafe} from "src/COWFeeModule.sol";
 contract DeployCOWFeeModule is Script {
     function run() external {
         address receiver = vm.envAddress("RECEIVER");
-        address toToken = vm.envAddress("TO_TOKEN");
+        address wrappedNativeToken = vm.envAddress("WRAPPED_NATIVE_TOKEN");
         address keeper = vm.envAddress("KEEPER");
         address settlement = vm.envAddress("SETTLEMENT");
         bytes32 appData = vm.envBytes32("APP_DATA");
@@ -16,7 +16,8 @@ contract DeployCOWFeeModule is Script {
         uint256 minOut = vm.envUint("MIN_OUT");
 
         vm.broadcast();
-        COWFeeModule module = new COWFeeModule(settlement, targetSafe, toToken, keeper, appData, receiver, minOut);
+        COWFeeModule module =
+            new COWFeeModule(settlement, targetSafe, wrappedNativeToken, keeper, appData, receiver, minOut);
 
         // only useful for local anvil setup
         if (shouldEnableModule) {

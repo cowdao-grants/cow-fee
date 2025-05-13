@@ -30,11 +30,36 @@ Copy the `.env.example` to `.env` and set the applicable configuration variables
 
 Run the script to deploy the module:
 
-```
+```sh
+# Dry run the deployment
+forge script ./script/DeployCOWFeeModule.s.sol \
+  --rpc-url <rpc>
+
+# Deploy and verify the contract
+#   Make sure to set the ETHERSCAN_API_KEY environment variable
 forge script ./script/DeployCOWFeeModule.s.sol \
   --rpc-url <rpc> \
-  --broadcast
+  --broadcast --verify
 ```
+
+### Verify module
+To verify the module if the contract is already deployed:
+```sh
+source .env
+
+forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" $SETTLEMENT $TARGET_SAFE $WRAPPED_NATIVE_TOKEN $KEEPER $APP_DATA $RECEIVER $MIN_OUT)
+```
+
+### Enable module
+The deployment creates the module, but this module needs to be enabled on the target safe.
+
+One way to do this is to use the [Transaction Builder UI](https://app.safe.global/share/safe-app?appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder) on the target safe.
+1. Select the target safe.
+2. Click on `Use Implementation ABI` to load the ABI automatically.
+3. Select `enableModule` from the dropdown of available functions.
+4. Enter the module address and click on `Add new transaction`
+5. Send batch
+
 
 ### Keeper
 
@@ -45,7 +70,7 @@ variable.
 Usage: cow-fee [options]
 
 Options:
-  --network <network>                                   (choices: "mainnet", "gnosis", "arbitrum")
+  --network <network>                                   (choices: "mainnet", "gnosis", "arbitrum", "base", "sepolia")
   --rpc-url <rpc-url>
   --max-orders <max-orders>                            Maximum number of orders to place in single drip call (default: 250)
   --buy-amount-slippage-bps <buy-amount-slippage-bps>  Tolerance to add to the quoted buyAmount (default: 100)
