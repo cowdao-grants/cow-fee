@@ -291,7 +291,7 @@ async function drip(
   const from = await signerWithProvider.getAddress();
   const value = BigNumber.from(0);
 
-  const txRequest: Deferrable<TransactionRequest> = {
+  const txRequest = {
     from,
     to,
     nonce: nonce,
@@ -300,11 +300,12 @@ async function drip(
     data: calldata,
     value,
   };
+
   console.log("\nDrip transaction parameters:", {
     ...txRequest,
-    gasLimit: estimatedGas.toString(),
-    gasPrice: gasPrice.toString(),
-    value: value.toString(),
+    gasLimit: txRequest.gasLimit.toString(),
+    gasPrice: txRequest.gasPrice.toString(),
+    value: txRequest.value.toString(),
   });
 
   // Ask for confirmation before sending the transaction
