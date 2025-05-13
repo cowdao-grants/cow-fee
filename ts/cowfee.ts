@@ -273,40 +273,45 @@ async function drip(
   toDrip: { token: string; sellAmount: BigNumber; buyAmount: BigNumber }[],
   confirmDrip: boolean
 ) {
-  // Estimate gas for drip transaction first
-  const estimatedGas = await moduleContract.estimateGas.drip(
-    toApprove,
-    toDrip,
-    { nonce: await signerWithProvider.getTransactionCount() }
-  );
+  // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
+  const nonce = await signerWithProvider.getTransactionCount();
 
   // Get transaction parameters and calldata
-  const nonce = await signerWithProvider.getTransactionCount();
-  const calldata = moduleContract.interface.encodeFunctionData("drip", [
-    toApprove,
-    toDrip,
-  ]);
-  const to = moduleContract.address;
-  const gasPrice = await signerWithProvider.getGasPrice();
-  const from = await signerWithProvider.getAddress();
-  const value = BigNumber.from(0);
-
-  const txRequest = {
-    from,
-    to,
-    nonce: nonce,
-    gasLimit: estimatedGas,
-    gasPrice: gasPrice,
-    data: calldata,
-    value,
+  const txBaseRequest = {
+    from: await signerWithProvider.getAddress(),
+    to: moduleContract.address,
+    gasPrice: await signerWithProvider.getGasPrice(),
+    data: moduleContract.interface.encodeFunctionData("drip", [
+      toApprove,
+      toDrip,
+    ]),
+    value: BigNumber.from(0),
+    nonce,
   };
 
   console.log("\nDrip transaction parameters:", {
-    ...txRequest,
-    gasLimit: txRequest.gasLimit.toString(),
-    gasPrice: txRequest.gasPrice.toString(),
-    value: txRequest.value.toString(),
+    ...txBaseRequest,
+    gasPrice: txBaseRequest.gasPrice.toString(),
+    value: txBaseRequest.value.toString(),
   });
+
+  // Estimate gas for the transaction ()
+  const gasLimit = await signerWithProvider
+    .estimateGas(txBaseRequest)
+    .catch((error) => {
+      console.error(
+        "Error estimating gas. Please review the transaction parameters"
+      );
+
+      throw new Error("Error estimating gas", { cause: error });
+    });
+
+  const txRequest: Deferrable<TransactionRequest> = {
+    ...txBaseRequest,
+    gasLimit,
+  };
+
+  console.log("Estimated gas limit:", gasLimit.toString());
 
   // Ask for confirmation before sending the transaction
   const confirmation = confirmDrip
