@@ -95,7 +95,7 @@ contract COWFeeModule {
         uint256 nativeBalance = address(settlement).balance;
         bool hasToWrapNativeToken = nativeBalance >= minOut;
 
-        // Wrapped native token is handled differently, because its the buyToken, we just do a normal transfer (requires an additional interaction)
+        // Wrapped native token is handled differently because it's the buyToken, we just do a normal transfer (requires an additional interaction)
         // We account for the native balance (only if we wrap it)
         IWrappedNativeToken wrappedNativeTokenContract = IWrappedNativeToken(wrappedNativeToken);
         uint256 wrappedNativeBalance =
