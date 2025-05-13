@@ -39,7 +39,7 @@ forge script ./script/DeployCOWFeeModule.s.sol \
 #   Make sure to set the ETHERSCAN_API_KEY environment variable
 forge script ./script/DeployCOWFeeModule.s.sol \
   --rpc-url <rpc> \
-  --broadcast --verify
+  --broadcast --verify --private-key <private-key>
 ```
 
 ### Verify module
