@@ -1,7 +1,13 @@
 import { ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 import { getTokensToSwap, swapTokens } from "./ts/cowfee";
-import { IConfig, networkSpecificConfigs, toChainId } from "./ts/common";
+import {
+  IConfig,
+  networkSpecificConfigs,
+  SUPPORTED_NETWORKS,
+  toChainId,
+  validatedProvider,
+} from "./ts/common";
 import { Command, Option } from "@commander-js/extra-typings";
 import { erc20Abi, moduleAbi } from "./ts/abi";
 
@@ -22,15 +28,7 @@ const readConfig = async (): Promise<
 
   const program = new Command()
     .name("cow-fee")
-    .addOption(
-      new Option("--network <network>").choices([
-        "mainnet",
-        "gnosis",
-        "arbitrum",
-        "base",
-        "sepolia",
-      ] as const)
-    )
+    .addOption(new Option("--network <network>").choices(SUPPORTED_NETWORKS))
     .addOption(new Option("--rpc-url <rpc-url>"))
     .addOption(
       new Option(
@@ -87,19 +85,10 @@ const readConfig = async (): Promise<
   } = options;
   const network = selectedNetwork || "mainnet";
 
-  const { rpcUrl: defaultRpcUrl } =
-    networkSpecificConfigs[network as keyof typeof networkSpecificConfigs];
-  const rpcUrl = options.rpcUrl || defaultRpcUrl;
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-
-  // Check if the RPC provider chain matches the expected network
-  const providerChainId = (await provider.getNetwork()).chainId;
-  const expectedChainId = toChainId(network);
-  if (providerChainId !== expectedChainId) {
-    throw new Error(
-      `Provider chain ID ${providerChainId} does not match expected chain ID ${expectedChainId} for network ${network}`
-    );
-  }
+  const [rpcUrl, provider, chainId] = await validatedProvider(
+    network,
+    options.rpcUrl
+  );
 
   const moduleContract = new ethers.Contract(module, moduleAbi, provider);
   const [
@@ -128,8 +117,6 @@ const readConfig = async (): Promise<
       `The provided private key belongs to ${walletAddress}, which doesn't match the keeper (${keeper})`
     );
   }
-
-  const chainId = toChainId(network);
 
   return [
     {

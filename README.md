@@ -43,23 +43,32 @@ forge script ./script/DeployCOWFeeModule.s.sol \
 ```
 
 ### Verify module
+
 To verify the module if the contract is already deployed:
+
 ```sh
 source .env
 
 forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" $SETTLEMENT $TARGET_SAFE $WRAPPED_NATIVE_TOKEN $KEEPER $APP_DATA $RECEIVER $MIN_OUT)
 ```
 
+You can compare the parameters of a new module with those of the module that is currently registered in the CoW multisig responsible for fee withdrawals.
+
+```sh
+yarn ts-node compare-deployments.ts --network <network name> <address of the newly deployed module>
+```
+
 ### Enable module
+
 The deployment creates the module, but this module needs to be enabled on the target safe.
 
 One way to do this is to use the [Transaction Builder UI](https://app.safe.global/share/safe-app?appUrl=https%3A%2F%2Fapps-portal.safe.global%2Ftx-builder) on the target safe.
+
 1. Select the target safe.
 2. Click on `Use Implementation ABI` to load the ABI automatically.
 3. Select `enableModule` from the dropdown of available functions.
 4. Enter the module address and click on `Add new transaction`
 5. Send batch
-
 
 ### Keeper
 

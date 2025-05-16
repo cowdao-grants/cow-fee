@@ -63,6 +63,13 @@ export const erc20Abi = [
     stateMutability: "pure",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "name",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "pure",
+    type: "function",
+  },
 ];
 
 export const moduleAbi = [

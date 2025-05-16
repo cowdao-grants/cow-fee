@@ -1,9 +1,25 @@
 import { OrderBookApi, SupportedChainId } from "@cowprotocol/cow-sdk";
-import { BigNumber, ethers } from "ethers";
+import { ethers } from "ethers";
 import { multicall3Abi } from "./abi";
 import readline from "readline";
 
-export const networkSpecificConfigs = {
+interface NetworkDetails {
+  rpcUrl: string;
+  explorer: string;
+}
+
+export const SUPPORTED_NETWORKS = [
+  "mainnet",
+  "gnosis",
+  "arbitrum",
+  "base",
+  "sepolia",
+] as const;
+
+export const networkSpecificConfigs: Record<
+  (typeof SUPPORTED_NETWORKS)[number],
+  NetworkDetails
+> = {
   mainnet: {
     rpcUrl: "https://eth.llamarpc.com",
     explorer: "https://explorer.cow.fi",
@@ -35,7 +51,7 @@ export interface IConfig {
   gpv2Settlement: string;
   vaultRelayer: string;
   rpcUrl: string;
-  network: keyof typeof networkSpecificConfigs;
+  network: (typeof SUPPORTED_NETWORKS)[number];
   wrappedNativeToken: string;
   minOut: bigint;
   targetSafe: string;
@@ -70,6 +86,25 @@ export function toChainId(network: keyof typeof networkSpecificConfigs) {
     }
   }
 }
+
+export const validatedProvider = async function (
+  network: (typeof SUPPORTED_NETWORKS)[number],
+  userRpcUrl: string | undefined
+): Promise<[string, ethers.providers.JsonRpcProvider, number]> {
+  const { rpcUrl: defaultRpcUrl } = networkSpecificConfigs[network];
+  const rpcUrl = userRpcUrl || defaultRpcUrl;
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+
+  // Check if the RPC provider chain matches the expected network
+  const providerChainId = (await provider.getNetwork()).chainId;
+  const expectedChainId = toChainId(network);
+  if (providerChainId !== expectedChainId) {
+    throw new Error(
+      `Provider chain ID ${providerChainId} does not match expected chain ID ${expectedChainId} for network ${network}`
+    );
+  }
+  return [rpcUrl, provider, expectedChainId];
+};
 
 export const getOrderbookApi = (chainId: SupportedChainId) => {
   return new OrderBookApi({
