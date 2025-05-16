@@ -1,15 +1,11 @@
 import { ethers } from "ethers";
 import axios from "axios";
-import { SUPPORTED_NETWORKS, toChainId, validatedProvider } from "./ts/common";
+import { SUPPORTED_NETWORKS, validatedProvider } from "./ts/common";
 import { Command, Option, Argument } from "@commander-js/extra-typings";
 import { erc20Abi, moduleAbi } from "./ts/abi";
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 
 const FEE_MODULE_CONTRACT_NAME = "COWFeeModule";
-
-// The fee-withdrawal multisig is the same on all supported networks and has an
-// instance of CoWFeeModule registered under it.
-const FEE_WITHDRAWAL_MULTISIG = "0x423cEc87f19F0778f549846e0801ee267a917935";
 
 interface IConfig {
   options: object;
@@ -122,11 +118,12 @@ interface SafeApiResponse {
 }
 
 const getRegisteredModule = async function (
+  targetSafe: string,
   chainId: SupportedChainId
 ): Promise<string | null> {
   // See https://safe-client.safe.global/api#/safes/safesGetSafeV1
   const request = await axios.get(
-    `https://safe-client.safe.global/v1/chains/${chainId}/safes/${FEE_WITHDRAWAL_MULTISIG}`
+    `https://safe-client.safe.global/v1/chains/${chainId}/safes/${targetSafe.toLowerCase()}`
   );
   const response: SafeApiResponse = request.data;
   const feeModules = (response.modules ?? []).filter(
@@ -134,7 +131,7 @@ const getRegisteredModule = async function (
   );
   if (feeModules.length !== 1) {
     console.error(
-      `The team multisig at ${FEE_WITHDRAWAL_MULTISIG} has ${
+      `The target Safe at ${targetSafe} has ${
         feeModules.length === 0 ? "no" : "more than one"
       } fee module. No comparison will be presented.`
     );
@@ -149,7 +146,10 @@ const compare = async function (
   chainId: number,
   provider: ethers.providers.JsonRpcProvider
 ) {
-  const registeredModule = await getRegisteredModule(chainId);
+  const registeredModule = await getRegisteredModule(
+    inputModuleParams.targetSafe,
+    chainId
+  );
 
   if (registeredModule === null) {
     return;
