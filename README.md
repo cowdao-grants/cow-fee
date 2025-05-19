@@ -42,9 +42,9 @@ forge script ./script/DeployCOWFeeModule.s.sol \
   --broadcast --verify
 ```
 
-### Verify module
+### Verify on block explorer
 
-To verify the module if the contract is already deployed:
+To verify the contract code of the module on the chain's block explorer if the contract is already deployed:
 
 ```sh
 source .env
@@ -52,7 +52,11 @@ source .env
 forge verify-contract <fee-module-address> COWFeeModule --chain-id <chain-id> --etherscan-api-key $ETHERSCAN_API_KEY --constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32,address,uint256)" $SETTLEMENT $TARGET_SAFE $WRAPPED_NATIVE_TOKEN $KEEPER $APP_DATA $RECEIVER $MIN_OUT)
 ```
 
-You can compare the parameters of a new module with those of the module that is currently registered in the CoW multisig responsible for fee withdrawals.
+### Validate deployment parameters
+
+The module may be redeployed often to update its parameters.
+If there's already a past deployment, it's helpful to compare the parameters of a new deployment with the current one.
+This can be done with the following script:
 
 ```sh
 yarn ts-node compare-deployments.ts --network <network name> <address of the newly deployed module>
