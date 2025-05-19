@@ -163,9 +163,9 @@ const compare = async function (
   for (const [key, registeredValue] of Object.entries(registeredModuleParams)) {
     const inputValue = inputModuleParams[key as keyof ModuleParameters];
     if (inputValue !== registeredValue) {
-      console.log(`Parameter ${key} differs:`);
-      console.log(`  New value:              ${inputValue}`);
+      console.log(`🚨 Different parameter: ${key}`);
       console.log(`  Value currently in use: ${registeredValue}`);
+      console.log(`  New value:              ${inputValue}\n`);
     }
   }
 };
