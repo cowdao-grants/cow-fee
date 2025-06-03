@@ -14,6 +14,8 @@ export const SUPPORTED_NETWORKS = [
   "arbitrum",
   "base",
   "sepolia",
+  "avalanche",
+  "polygon",
 ] as const;
 
 export const networkSpecificConfigs: Record<
@@ -39,6 +41,14 @@ export const networkSpecificConfigs: Record<
   sepolia: {
     rpcUrl: "https://sepolia.drpc.org",
     explorer: "https://explorer.cow.fi/sepolia",
+  },
+  avalanche: {
+    rpcUrl: "https://api.avax.network/ext/bc/C/rpc ",
+    explorer: "https://explorer.cow.fi/avax",
+  },
+  polygon: {
+    rpcUrl: "https://polygon-rpc.com",
+    explorer: "https://explorer.cow.fi/polygon",
   },
 };
 
@@ -80,6 +90,12 @@ export function toChainId(network: keyof typeof networkSpecificConfigs) {
     }
     case "sepolia": {
       return SupportedChainId.SEPOLIA;
+    }
+    case "avalanche": {
+      return SupportedChainId.AVALANCHE;
+    }
+    case "polygon": {
+      return SupportedChainId.POLYGON;
     }
     default: {
       throw new Error(`Unsupported network ${network}`);
