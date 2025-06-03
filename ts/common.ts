@@ -48,7 +48,7 @@ export const networkSpecificConfigs: Record<
   },
   polygon: {
     rpcUrl: "https://polygon-rpc.com",
-    explorer: "https://explorer.cow.fi/polygon",
+    explorer: "https://explorer.cow.fi/pol",
   },
 };
 
