@@ -43,7 +43,7 @@ export const networkSpecificConfigs: Record<
     explorer: "https://explorer.cow.fi/sepolia",
   },
   avalanche: {
-    rpcUrl: "https://api.avax.network/ext/bc/C/rpc ",
+    rpcUrl: "https://api.avax.network/ext/bc/C/rpc",
     explorer: "https://explorer.cow.fi/avax",
   },
   polygon: {
