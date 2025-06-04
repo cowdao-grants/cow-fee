@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
-import { getTokensToSwap, swapTokens } from "./ts/cowfee";
+import { getEthToWrap, getTokensToSwap, swapTokens } from "./ts/cowfee";
 import {
   IConfig,
   networkSpecificConfigs,
@@ -150,6 +150,8 @@ export const dripItAll = async () => {
 
   const signer = new ethers.Wallet(config.privateKey, provider);
 
+  const ethToWrap = await getEthToWrap(config, provider);
+
   const tokensToSwap = await getTokensToSwap(config, provider);
   console.log(
     "Tokens to swap:",
@@ -181,8 +183,10 @@ export const dripItAll = async () => {
     erc20Abi,
     provider
   );
+
+  const expectedToReceive = expectedBuy.add(ethToWrap);
   const decimals = await buyTokenContract.decimals();
-  const expectedUnits = ethers.utils.formatUnits(expectedBuy, decimals);
+  const expectedUnits = ethers.utils.formatUnits(expectedToReceive, decimals);
   const expectedUnitsFormatted = parseFloat(expectedUnits).toFixed(2);
   console.log(
     `Fee collection for chain ${config.network} initiated (${

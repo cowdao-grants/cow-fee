@@ -142,6 +142,14 @@ export const getTokensToSwap = async (
   return minOutFiltered;
 };
 
+export async function getEthToWrap(
+  config: IConfig,
+  provider: ethers.providers.JsonRpcProvider
+) {
+  const ethBalance = await provider.getBalance(config.gpv2Settlement);
+  return ethBalance.gte(config.minOut) ? ethBalance : BigNumber.from(0);
+}
+
 // get COWFeeModule appData
 export const getAppData = async () => {
   const appDataDoc = {
