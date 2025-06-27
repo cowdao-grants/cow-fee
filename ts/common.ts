@@ -275,12 +275,12 @@ export interface TransactionParams {
   maxGasIncreasePercentage?: number;
 
   /**
-   * The wait time for the max gas price. Default is 1 hour.
+   * The wait time for the max gas price in milliseconds. Default is 1 hour.
    */
   waitTimeForMaxGasPrice?: number;
 
   /**
-   * The timeout before increasing the gas price. Default is 5 minutes.
+   * The timeout in milliseconds before increasing the gas price. Default is 5 minutes.
    */
   timeoutBeforeIncreasingGasPrice?: number;
 }
