@@ -7,8 +7,8 @@ import {
 import { multicall3Abi } from "./abi";
 import readline from "readline";
 
-const GAS_INCREASE_STEP = 10; // 10% increase per retry
-const MAX_GAS_INCREASE = 120; // 200% of original gas price
+const GAS_INCREASE_STEP = 10; // +10% increase per retry
+const MAX_GAS_INCREASE = 100; // +100% of original gas price
 const WAIT_TIME_FOR_MAX_GAS_PRICE = 100 * 1000; // 1 hour
 const TIMEOUT_BEFORE_INCREASING_GAS_PRICE = 1 * 1000; // 5 min
 
@@ -429,7 +429,7 @@ export async function executeTransaction(
     isGasPriceDataEIP1559(originalGasPrice)
       ? originalGasPrice.maxFeePerGas
       : originalGasPrice.gasPrice,
-    maxGasIncreasePercentage - 100
+    maxGasIncreasePercentage
   );
 
   let currentGasPrice = { ...originalGasPrice };
