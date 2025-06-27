@@ -351,7 +351,7 @@ function increaseGasPrice(params: {
       GAS_INCREASE_STEP
     );
 
-    // Increase max fee and max priority fee by 10% (capped to maxGasPrice)
+    // Increase max fee and max priority fee by the step percentage (capped to maxGasPrice)
     updatedGasPrice = {
       maxFeePerGas: maxFeePerGas.gt(maxGasPrice) ? maxGasPrice : maxFeePerGas,
       maxPriorityFeePerGas: increaseByPercentage(
@@ -368,7 +368,7 @@ function increaseGasPrice(params: {
     baseTxRequest.maxFeePerGas = updatedGasPrice.maxFeePerGas;
     baseTxRequest.maxPriorityFeePerGas = updatedGasPrice.maxPriorityFeePerGas;
   } else {
-    // Increase legacy gas price by 10%
+    // Increase legacy gas price by the step percentage
     const gasPrice = increaseByPercentage(
       currentGasPrice.gasPrice,
       GAS_INCREASE_STEP
