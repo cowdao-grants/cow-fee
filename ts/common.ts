@@ -9,8 +9,8 @@ import readline from "readline";
 
 const GAS_INCREASE_STEP = 10; // +10% increase per retry
 const MAX_GAS_INCREASE = 100; // +100% of original gas price
-const WAIT_TIME_FOR_MAX_GAS_PRICE = 100 * 1000; // 1 hour
-const TIMEOUT_BEFORE_INCREASING_GAS_PRICE = 1 * 1000; // 5 min
+const WAIT_TIME_FOR_MAX_GAS_PRICE_MILLIS = 3600 * 1000; // 1 hour
+const TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS = 5 * 60 * 1000; // 5 min
 
 interface NetworkDetails {
   rpcUrl: string;
