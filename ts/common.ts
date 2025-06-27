@@ -373,10 +373,10 @@ function increaseGasPrice(params: {
       currentGasPrice.gasPrice,
       GAS_INCREASE_STEP
     );
+    usingMaximumGasPrice = gasPrice.gte(maxGasPrice);
     updatedGasPrice = {
-      gasPrice: gasPrice.gt(maxGasPrice) ? maxGasPrice : gasPrice,
+      gasPrice: usingMaximumGasPrice ? maxGasPrice : gasPrice,
     };
-    usingMaximumGasPrice = updatedGasPrice.gasPrice.eq(maxGasPrice);
 
     // Delete EIP-1559 fields (if they exist). This is a legacy transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
     delete baseTxRequest.maxFeePerGas;
