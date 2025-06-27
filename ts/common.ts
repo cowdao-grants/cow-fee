@@ -323,7 +323,6 @@ async function getGasPriceData(
 
 interface GasPriceIncreaseResult {
   currentGasPrice: GasPriceData;
-  baseTxRequest: TransactionRequest;
   usingMaximumGasPrice: boolean;
 }
 
@@ -360,13 +359,6 @@ function increaseGasPrice(params: {
       ),
     };
     usingMaximumGasPrice = updatedGasPrice.maxFeePerGas.eq(maxGasPrice);
-
-    // Delete legacy fields (if they exist). This is an EIP-1559 transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
-    delete baseTxRequest.gasPrice;
-
-    // Update transaction request with new gas price
-    baseTxRequest.maxFeePerGas = updatedGasPrice.maxFeePerGas;
-    baseTxRequest.maxPriorityFeePerGas = updatedGasPrice.maxPriorityFeePerGas;
   } else {
     // Increase legacy gas price by the step percentage
     const gasPrice = increaseByPercentage(
@@ -377,18 +369,10 @@ function increaseGasPrice(params: {
     updatedGasPrice = {
       gasPrice: usingMaximumGasPrice ? maxGasPrice : gasPrice,
     };
-
-    // Delete EIP-1559 fields (if they exist). This is a legacy transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
-    delete baseTxRequest.maxFeePerGas;
-    delete baseTxRequest.maxPriorityFeePerGas;
-
-    // Add new bumped legacy gas price
-    baseTxRequest.gasPrice = updatedGasPrice.gasPrice;
   }
 
   return {
     currentGasPrice: updatedGasPrice,
-    baseTxRequest,
     usingMaximumGasPrice,
   };
 }
@@ -417,8 +401,8 @@ export async function executeTransaction(
     txRequest,
     operationName,
     maxGasIncreasePercentage = MAX_GAS_INCREASE,
-    waitTimeForMaxGasPrice = WAIT_TIME_FOR_MAX_GAS_PRICE,
-    timeoutBeforeIncreasingGasPrice = TIMEOUT_BEFORE_INCREASING_GAS_PRICE,
+    waitTimeForMaxGasPrice = WAIT_TIME_FOR_MAX_GAS_PRICE_MILLIS,
+    timeoutBeforeIncreasingGasPrice = TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS,
   } = params;
 
   // Get initial fee estimation
@@ -477,19 +461,33 @@ export async function executeTransaction(
       }
 
       // Increase gas price
-      const {
-        currentGasPrice: updatedGasPrice,
-        baseTxRequest: updatedTxRequest,
-        usingMaximumGasPrice,
-      } = increaseGasPrice({
-        currentGasPrice,
-        baseTxRequest,
-        maxGasPrice,
-      });
+      const { currentGasPrice: updatedGasPrice, usingMaximumGasPrice } =
+        increaseGasPrice({
+          currentGasPrice,
+          baseTxRequest,
+          maxGasPrice,
+        });
+
+      // Update baseTxRequest with the new gas price
+      if (isGasPriceDataEIP1559(updatedGasPrice)) {
+        // Delete legacy fields (if they exist). This is an EIP-1559 transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
+        delete baseTxRequest.gasPrice;
+
+        // Update transaction request with new gas price
+        baseTxRequest.maxFeePerGas = updatedGasPrice.maxFeePerGas;
+        baseTxRequest.maxPriorityFeePerGas =
+          updatedGasPrice.maxPriorityFeePerGas;
+      } else {
+        // Delete EIP-1559 fields (if they exist). This is a legacy transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
+        delete baseTxRequest.maxFeePerGas;
+        delete baseTxRequest.maxPriorityFeePerGas;
+
+        // Add new bumped legacy gas price
+        baseTxRequest.gasPrice = updatedGasPrice.gasPrice;
+      }
 
       // Prepare for next iteration
       currentGasPrice = updatedGasPrice;
-      Object.assign(baseTxRequest, updatedTxRequest);
 
       if (usingMaximumGasPrice) {
         // Maximum gas price reached. Wait for longer with no more retries
