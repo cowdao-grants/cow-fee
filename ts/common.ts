@@ -16,6 +16,7 @@ export const SUPPORTED_NETWORKS = [
   "sepolia",
   "avalanche",
   "polygon",
+  "lens",
 ] as const;
 
 export const networkSpecificConfigs: Record<
@@ -49,6 +50,10 @@ export const networkSpecificConfigs: Record<
   polygon: {
     rpcUrl: "https://polygon-rpc.com",
     explorer: "https://explorer.cow.fi/pol",
+  },
+  lens: {
+    rpcUrl: "https://rpc.lens.xyz",
+    explorer: "https://explorer.cow.fi/lens",
   },
 };
 
@@ -96,6 +101,9 @@ export function toChainId(network: keyof typeof networkSpecificConfigs) {
     }
     case "polygon": {
       return SupportedChainId.POLYGON;
+    }
+    case "lens": {
+      return SupportedChainId.LENS;
     }
     default: {
       throw new Error(`Unsupported network ${network}`);
