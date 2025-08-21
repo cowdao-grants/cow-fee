@@ -1,11 +1,10 @@
 import { ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
-import { getEthToWrap, getTokensToSwap, swapTokens } from "./ts/cowfee";
+import { drip, getEthToWrap, getTokensToSwap, swapTokens } from "./ts/cowfee";
 import {
   IConfig,
   networkSpecificConfigs,
   SUPPORTED_NETWORKS,
-  toChainId,
   validatedProvider,
 } from "./ts/common";
 import { Command, Option } from "@commander-js/extra-typings";
@@ -151,6 +150,9 @@ export const dripItAll = async () => {
   const signer = new ethers.Wallet(config.privateKey, provider);
 
   const ethToWrap = await getEthToWrap(config, provider);
+  console.log("ETH to wrap:", formatUnits(ethToWrap, WETH_DECIMALS));
+
+  const moduleContract = new ethers.Contract(config.module, moduleAbi, signer);
 
   const tokensToSwap = await getTokensToSwap(config, provider);
   console.log(
@@ -164,14 +166,26 @@ export const dripItAll = async () => {
     }))
   );
 
-  for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {
-    const toSwap = tokensToSwap.slice(i, i + config.maxOrders);
-    try {
-      await swapTokens(config, signer, toSwap);
-    } catch (err) {
-      console.error("Error dripping:", err);
+  if (tokensToSwap.length > 0) {
+    // Drip the tokens
+    for (let i = 0; i < tokensToSwap.length; i += config.maxOrders) {
+      const toSwap = tokensToSwap.slice(i, i + config.maxOrders);
+      try {
+        await swapTokens(moduleContract, config, signer, toSwap);
+      } catch (err) {
+        console.error("Error dripping:", err);
+      }
+      break;
     }
-    break;
+  } else if (ethToWrap.gt(0)) {
+    // Handles the case where there's no tokens to swap, but we still have to drip to wrap ETH
+    await drip({
+      moduleContract,
+      signer,
+      toApprove: [],
+      toDrip: [],
+      confirmDrip: config.confirmDrip,
+    });
   }
 
   let expectedBuy = tokensToSwap.reduce(
@@ -199,6 +213,7 @@ export const dripItAll = async () => {
 
 const main = async () => {
   await dripItAll();
+  process.exit(0);
 };
 
 main();
