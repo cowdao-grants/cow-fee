@@ -17,6 +17,7 @@ export const SUPPORTED_NETWORKS = [
   "avalanche",
   "polygon",
   "lens",
+  "bnb",
 ] as const;
 
 export const networkSpecificConfigs: Record<
@@ -55,6 +56,10 @@ export const networkSpecificConfigs: Record<
     rpcUrl: "https://rpc.lens.xyz",
     explorer: "https://explorer.cow.fi/lens",
   },
+  bnb: {
+    rpcUrl: "https://bsc-dataseed.bnbchain.org",
+    explorer: "https://explorer.cow.fi/bnb"
+  }
 };
 
 export interface IConfig {
@@ -104,6 +109,9 @@ export function toChainId(network: keyof typeof networkSpecificConfigs) {
     }
     case "lens": {
       return SupportedChainId.LENS;
+    }
+    case "bnb": {
+      return SupportedChainId.BNB;
     }
     default: {
       throw new Error(`Unsupported network ${network}`);
