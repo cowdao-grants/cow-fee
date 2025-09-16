@@ -1,13 +1,13 @@
-import { BigNumber, ContractTransaction, ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import { TransactionRequest } from "@ethersproject/abstract-provider";
-import { Deferrable } from "@ethersproject/properties";
 
 import {
   IConfig,
   confirmMessage,
   getMulticall3,
   getOrderbookApi,
+  executeTransaction,
 } from "./common";
 import { getTokenBalances } from "./explorer-apis";
 import { erc20Abi, moduleAbi } from "./abi";
@@ -20,7 +20,6 @@ import {
   OrderQuoteSideKindSell,
   SellTokenSource,
   SigningScheme,
-  SupportedChainId,
 } from "@cowprotocol/cow-sdk";
 import { MetadataApi } from "@cowprotocol/app-data";
 
@@ -165,18 +164,30 @@ export const getAppData = async () => {
   return { cid, appDataHex, appDataContent };
 };
 
-export const swapTokens = async (
+export const getDripParams = async (
   config: IConfig,
   signerWithProvider: ethers.Signer,
   toSwap: Awaited<ReturnType<typeof getTokensToSwap>>
 ) => {
-  const orderBookApi = getOrderbookApi(config.chainId);
+  const { appDataHex, appDataContent } = await getAppData();
+  if (appDataHex.toLowerCase() !== config.appData.toLowerCase()) {
+    throw new Error(`appData mismatch: ${appDataHex} != ${config.appData}`);
+  }
 
   const moduleContract = new ethers.Contract(
     config.module,
     moduleAbi,
     signerWithProvider
   );
+};
+
+export const swapTokens = async (
+  moduleContract: ethers.Contract,
+  config: IConfig,
+  signerWithProvider: ethers.Signer,
+  toSwap: Awaited<ReturnType<typeof getTokensToSwap>>
+): Promise<void> => {
+  const orderBookApi = getOrderbookApi(config.chainId);
 
   const nextValidTo = await moduleContract.nextValidTo();
   const { appDataHex, appDataContent } = await getAppData();
@@ -217,14 +228,13 @@ export const swapTokens = async (
     buyAmount: token.buyAmount,
   }));
 
-  await drip(
-    config.chainId,
+  await drip({
     moduleContract,
-    signerWithProvider,
+    signer: signerWithProvider,
     toApprove,
     toDrip,
-    config.confirmDrip
-  );
+    confirmDrip: config.confirmDrip,
+  });
 };
 
 async function postOrders(
@@ -273,22 +283,35 @@ async function postOrders(
   return { failedOrders, successfullyPostedOrders, toActuallySwap };
 }
 
-async function drip(
-  chainId: SupportedChainId,
-  moduleContract: ethers.Contract,
-  signerWithProvider: ethers.Signer,
-  toApprove: string[],
-  toDrip: { token: string; sellAmount: BigNumber; buyAmount: BigNumber }[],
-  confirmDrip: boolean
-) {
+/**
+ * Get the transaction parameters for the drip transaction
+ * @param params - The parameters for the drip transaction
+ *
+ * @returns The transaction parameters
+ */
+async function getDripTx(params: DripParams): Promise<TransactionRequest> {
+  const {
+    moduleContract,
+    signer: signerWithProvider,
+    toApprove,
+    toDrip,
+  } = params;
+
   // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
   const nonce = await signerWithProvider.getTransactionCount();
 
+  // Estimate gas prices
+  let feeData = await signerWithProvider.getFeeData();
+  if (!feeData.maxFeePerGas) {
+    throw new Error("Failed to get max fee per gas from network");
+  }
+
   // Get transaction parameters and calldata
-  const txBaseRequest = {
+  const txBaseRequest: TransactionRequest = {
     from: await signerWithProvider.getAddress(),
     to: moduleContract.address,
-    gasPrice: await signerWithProvider.getGasPrice(),
+    maxFeePerGas: feeData.maxFeePerGas,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas || undefined,
     data: moduleContract.interface.encodeFunctionData("drip", [
       toApprove,
       toDrip,
@@ -298,30 +321,46 @@ async function drip(
   };
 
   console.log("\nDrip transaction parameters:", {
-    ...txBaseRequest,
-    gasPrice: txBaseRequest.gasPrice.toString(),
-    value: txBaseRequest.value.toString(),
+    from: txBaseRequest.from,
+    to: txBaseRequest.to,
+    maxFeePerGas: txBaseRequest.maxFeePerGas?.toString() || "undefined",
+    maxPriorityFeePerGas:
+      txBaseRequest.maxPriorityFeePerGas?.toString() || "undefined",
+    value: txBaseRequest.value?.toString() || "0",
+    nonce: txBaseRequest.nonce,
   });
 
-  // Estimate gas for the transaction ()
+  // Estimate gas for the transaction
   const gasLimit = await signerWithProvider
     .estimateGas(txBaseRequest)
     .catch((error) => {
       console.error(
         "Error estimating gas. Please review the transaction parameters"
       );
-
       throw new Error("Error estimating gas", { cause: error });
     });
 
-  const txRequest: Deferrable<TransactionRequest> = {
+  console.log("Estimated gas limit:", gasLimit.toString());
+
+  return {
     ...txBaseRequest,
     gasLimit,
   };
+}
 
-  console.log("Estimated gas limit:", gasLimit.toString());
+export interface DripParams {
+  moduleContract: ethers.Contract;
+  signer: ethers.Signer;
+  toApprove: string[];
+  toDrip: { token: string; sellAmount: BigNumber; buyAmount: BigNumber }[];
+  confirmDrip: boolean;
+}
 
-  // Ask for confirmation before sending the transaction
+export async function drip(params: DripParams) {
+  const { signer, confirmDrip } = params;
+
+  const txBaseRequest = await getDripTx(params);
+
   const confirmation = confirmDrip
     ? await confirmMessage("\nDo you want to send this transaction? (yes/no): ")
     : true;
@@ -331,12 +370,9 @@ async function drip(
     return;
   }
 
-  const dripTx: ContractTransaction = await signerWithProvider.sendTransaction(
-    txRequest
-  );
-
-  console.log("Drip transaction:", dripTx.hash);
-  const dripTxReceipt = await dripTx.wait();
-  if (dripTxReceipt.status === 0)
-    throw new Error(`drip failed: ${dripTxReceipt.transactionHash}`);
+  await executeTransaction({
+    signer: signer,
+    txRequest: txBaseRequest,
+    operationName: "Drip",
+  });
 }
