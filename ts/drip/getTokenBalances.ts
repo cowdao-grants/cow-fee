@@ -1,7 +1,8 @@
-import axios from 'axios';
-import { IConfig, getMulticall3, getOrderbookApi } from './common';
-import { BigNumber, ethers } from 'ethers';
-import { erc20Abi, settlementAbi } from './abi';
+import axios from "axios";
+import { ethers } from "ethers";
+import { erc20Abi, settlementAbi } from "../abi";
+import { getMulticall3 } from "../utils/misc";
+import { IConfig } from "../config";
 
 interface ITokenInfo {
   address: string;
@@ -57,28 +58,13 @@ const getTokenInfosFromBlockscout = async (
   );
 
   return data
-    .filter((token) => token.token.type === 'ERC-20')
+    .filter((token) => token.token.type === "ERC-20")
     .map((token) => ({
       address: token.token.address,
       decimals: +token.token.decimals,
       symbol: token.token.symbol,
       balance: token.value,
     }));
-};
-
-interface IDefillamaPriceResponse {
-  coins: {
-    'coingecko:ethereum': {
-      price: number;
-    };
-  };
-}
-
-const getEthPrice = async () => {
-  const { data } = await axios.get<IDefillamaPriceResponse>(
-    'https://coins.llama.fi/prices/current/coingecko:ethereum'
-  );
-  return data.coins['coingecko:ethereum'].price;
 };
 
 const ABI_CODER = new ethers.utils.AbiCoder();
@@ -90,7 +76,7 @@ const getDecimals = async (
   const Multicall3 = getMulticall3(provider);
   const decimalsCalldata = new ethers.utils.Interface(
     erc20Abi
-  ).encodeFunctionData('decimals');
+  ).encodeFunctionData("decimals");
   const cds = tokens.map((token) => ({
     target: token,
     callData: decimalsCalldata,
@@ -100,9 +86,9 @@ const getDecimals = async (
     if (!r.success) return 0;
 
     try {
-      return ABI_CODER.decode(['uint8'], r.returnData)[0];
+      return ABI_CODER.decode(["uint8"], r.returnData)[0];
     } catch (err) {
-      console.log('errror decoding', r.returnData, tokens[idx]);
+      console.log("errror decoding", r.returnData, tokens[idx]);
     }
   }) as number[];
   return decimals;
@@ -110,16 +96,20 @@ const getDecimals = async (
 
 // Chunks the range [start,end] into subranges of length `chunkSize`
 // (or shorter for the last chunk).
-const chunkRange = (start: number, end: number, chunkSize: number): [number, number][] => {
-    const chunks: [number, number][] = [];
-    for (let i = start; i <= end; i += chunkSize) {
-        const chunk = Math.min(i + chunkSize - 1, end);
-        chunks.push([i, chunk]);
-    }
-    return chunks;
-}
+const chunkRange = (
+  start: number,
+  end: number,
+  chunkSize: number
+): [number, number][] => {
+  const chunks: [number, number][] = [];
+  for (let i = start; i <= end; i += chunkSize) {
+    const chunk = Math.min(i + chunkSize - 1, end);
+    chunks.push([i, chunk]);
+  }
+  return chunks;
+};
 
-export const getTokenInfosFromChain = async (
+const getTokenInfosFromChain = async (
   config: IConfig
 ): Promise<ITokenInfo[]> => {
   // Fetch logs for at most this many blocks at once to avoid exceeding
@@ -134,14 +124,16 @@ export const getTokenInfosFromChain = async (
   const tradeFilter = settlement.filters.Trade();
   const currentBlock = await provider.getBlockNumber();
 
-  const chunks = chunkRange(currentBlock - config.lookbackRange, currentBlock, LOG_FILTER_RANGE);
-  const logRanges = await Promise.all(chunks.map(async ([start, end]) => {
-      return await settlement.queryFilter(
-        tradeFilter,
-        start,
-        end,
-      )
-  }));
+  const chunks = chunkRange(
+    currentBlock - config.lookbackRange,
+    currentBlock,
+    LOG_FILTER_RANGE
+  );
+  const logRanges = await Promise.all(
+    chunks.map(async ([start, end]) => {
+      return await settlement.queryFilter(tradeFilter, start, end);
+    })
+  );
   const logs = logRanges.flat();
 
   const allTokens = Array.from(
@@ -151,7 +143,7 @@ export const getTokenInfosFromChain = async (
   ).filter(
     (x) =>
       x.toLowerCase() !==
-      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
+      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".toLowerCase()
   );
 
   const allDecimals = await getDecimals(provider, allTokens);
@@ -160,7 +152,7 @@ export const getTokenInfosFromChain = async (
     return {
       address: token,
       decimals,
-      symbol: '',
+      symbol: "",
     };
   });
   return allTokenInfo;
@@ -168,22 +160,22 @@ export const getTokenInfosFromChain = async (
 
 export const getTokenBalances = async (
   address: string,
-  network: IConfig['network'],
-  strategy: 'explorer' | 'chain',
+  network: IConfig["network"],
+  strategy: "explorer" | "chain",
   config: IConfig
 ): Promise<ITokenInfo[]> => {
   switch (strategy) {
-    case 'explorer': {
+    case "explorer": {
       switch (network) {
-        case 'mainnet': {
+        case "mainnet": {
           return getTokenInfosFromEthPlorer(address);
         }
-        case 'gnosis': {
+        case "gnosis": {
           return getTokenInfosFromBlockscout(address);
         }
       }
     }
-    case 'chain': {
+    case "chain": {
       return getTokenInfosFromChain(config);
     }
   }
