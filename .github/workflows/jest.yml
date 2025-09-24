@@ -1,0 +1,25 @@
+name: Jest tests
+
+on:
+  push:
+    branches: [main, refactor]
+  pull_request:
+    branches: [main, refactor]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run tests
+        run: yarn test

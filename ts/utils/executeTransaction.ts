@@ -66,7 +66,7 @@ export async function executeTransaction(
 ): Promise<string | null> {
   const {
     signer,
-    txRequest,
+    txRequest: baseTxRequest,
     operationName,
     maxGasIncreasePercentage = MAX_GAS_INCREASE,
     waitTimeForMaxGasPrice = WAIT_TIME_FOR_MAX_GAS_PRICE_MILLIS,
@@ -85,16 +85,16 @@ export async function executeTransaction(
   );
 
   let currentGasPrice = { ...originalGasPrice };
-  const baseTxRequest: TransactionRequest = {
-    ...txRequest,
-    ...currentGasPrice,
-  };
+  let txRequest: TransactionRequest = applyGasPriceToTx(
+    baseTxRequest,
+    currentGasPrice
+  );
 
   let tx: ContractTransaction;
   while (true) {
     try {
       // Send the transaction
-      tx = await signer.sendTransaction(baseTxRequest);
+      tx = await signer.sendTransaction(txRequest);
 
       // Wait for the transaction to be mined (or timeout to increase gas price)
       const receipt = await waitForTransactionWithTimeout(
@@ -132,29 +132,12 @@ export async function executeTransaction(
       const { currentGasPrice: updatedGasPrice, usingMaximumGasPrice } =
         increaseGasPrice({
           currentGasPrice,
-          baseTxRequest,
+          baseTxRequest: txRequest,
           maxGasPrice,
         });
 
-      // Update baseTxRequest with the new gas price
-      if (isGasPriceDataEIP1559(updatedGasPrice)) {
-        // Delete legacy fields (if they exist). This is an EIP-1559 transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
-        delete baseTxRequest.gasPrice;
-
-        // Update transaction request with new gas price
-        baseTxRequest.maxFeePerGas = updatedGasPrice.maxFeePerGas;
-        baseTxRequest.maxPriorityFeePerGas =
-          updatedGasPrice.maxPriorityFeePerGas;
-      } else {
-        // Delete EIP-1559 fields (if they exist). This is a legacy transaction. They should not be present anyways, since the RPC provider should be consistent (either always EIP-1559 or always legacy)
-        delete baseTxRequest.maxFeePerGas;
-        delete baseTxRequest.maxPriorityFeePerGas;
-
-        // Add new bumped legacy gas price
-        baseTxRequest.gasPrice = updatedGasPrice.gasPrice;
-      }
-
-      // Prepare for next iteration
+      // Use a new transaction request with the updated gas price
+      txRequest = applyGasPriceToTx(baseTxRequest, updatedGasPrice);
       currentGasPrice = updatedGasPrice;
 
       if (usingMaximumGasPrice) {
@@ -376,4 +359,25 @@ async function waitForTransactionWithTimeout(
   console.log(`${operationName} transaction was mined:`, tx.hash);
 
   return receipt;
+}
+
+export function applyGasPriceToTx(
+  txRequest: TransactionRequest,
+  gasPrice: GasPriceData
+): TransactionRequest {
+  if (isGasPriceDataEIP1559(gasPrice)) {
+    return {
+      ...txRequest,
+      maxFeePerGas: gasPrice.maxFeePerGas,
+      maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
+      gasPrice: undefined,
+    };
+  } else {
+    return {
+      ...txRequest,
+      gasPrice: gasPrice.gasPrice,
+      maxFeePerGas: undefined,
+      maxPriorityFeePerGas: undefined,
+    };
+  }
 }
