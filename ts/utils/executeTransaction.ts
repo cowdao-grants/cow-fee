@@ -40,11 +40,16 @@ export interface TransactionParams {
    * The timeout in milliseconds before increasing the gas price. Default is 5 minutes.
    */
   timeoutBeforeIncreasingGasPrice?: number;
+
+  /**
+   * Optional custom gas price fetcher. If not provided, uses the default provider.getFeeData()
+   */
+  customGasPriceFetcher?: CustomGasPriceFetcher;
 }
 
-type GasPriceData = GasPriceDataEIP1559 | GasPriceDataLegacy;
+export type GasPriceData = GasPriceDataEIP1559 | GasPriceDataLegacy;
 
-interface GasPriceDataEIP1559 {
+export interface GasPriceDataEIP1559 {
   maxFeePerGas: BigNumber;
   maxPriorityFeePerGas: BigNumber;
 }
@@ -52,6 +57,13 @@ interface GasPriceDataEIP1559 {
 interface GasPriceDataLegacy {
   gasPrice: BigNumber;
 }
+
+/**
+ * Custom gas price fetcher function type
+ */
+export type CustomGasPriceFetcher = (
+  provider: ethers.providers.Provider
+) => Promise<GasPriceData>;
 
 /**
  * Executes a transaction with automatic gas price increases, timeout handling, and transaction replacement handling.
@@ -71,10 +83,11 @@ export async function executeTransaction(
     maxGasIncreasePercentage = MAX_GAS_INCREASE,
     waitTimeForMaxGasPrice = WAIT_TIME_FOR_MAX_GAS_PRICE_MILLIS,
     timeoutBeforeIncreasingGasPrice = TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS,
+    customGasPriceFetcher,
   } = params;
 
   // Get initial fee estimation
-  const originalGasPrice = await getGasPriceData(signer);
+  const originalGasPrice = await getGasPriceData(signer, customGasPriceFetcher);
 
   // Calculate the maximum gas price we are willing to pay
   const maxGasPrice = increaseByPercentage(
@@ -169,8 +182,30 @@ function isGasPriceDataEIP1559(
 }
 
 async function getGasPriceData(
-  provider: ethers.providers.JsonRpcProvider | ethers.Signer
+  provider: ethers.providers.JsonRpcProvider | ethers.Signer,
+  customFetcher?: CustomGasPriceFetcher
 ): Promise<GasPriceData> {
+  // Use custom fetcher if provided
+  if (customFetcher) {
+    const actualProvider =
+      "provider" in provider && provider.provider
+        ? provider.provider
+        : (provider as ethers.providers.Provider);
+
+    const gasPriceData = await customFetcher(actualProvider).catch((error) => {
+      console.error(
+        `Failed to fetch gas prices from custom fetcher: ${error}. Defaulting to provider.getFeeData()`
+      );
+
+      return null;
+    });
+
+    // Only return the gas price date if the fetcher succeeded, otherwise use the default strategy
+    if (gasPriceData) {
+      return gasPriceData;
+    }
+  }
+
   const feeData = await provider.getFeeData();
 
   if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {

@@ -467,4 +467,69 @@ describe("executeTransaction", () => {
       expect(secondCall.gasPrice).toEqual(BigNumber.from("22000000000")); // +10%
     });
   });
+
+  describe("Custom gas price fetcher", () => {
+    it("should use custom gas price fetcher when provided", async () => {
+      (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
+
+      const customGasPriceFetcher = jest.fn().mockResolvedValue({
+        maxFeePerGas: BigNumber.from("30000000000"), // 30 gwei
+        maxPriorityFeePerGas: BigNumber.from("3000000000"), // 3 gwei
+      });
+
+      mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
+
+      const params: TransactionParams = {
+        signer: mockSigner,
+        txRequest: {
+          to: "0x1234567890123456789012345678901234567890",
+          value: BigNumber.from("1000000000000000000"),
+        },
+        operationName: "Test Transaction",
+        customGasPriceFetcher,
+      };
+
+      const result = await executeTransaction(params);
+
+      expect(result).toBe(mockTxHash);
+      expect(customGasPriceFetcher).toHaveBeenCalledWith(mockProvider);
+      expect(mockSigner.getFeeData).not.toHaveBeenCalled();
+      expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
+        to: "0x1234567890123456789012345678901234567890",
+        value: BigNumber.from("1000000000000000000"),
+        maxFeePerGas: BigNumber.from("30000000000"),
+        maxPriorityFeePerGas: BigNumber.from("3000000000"),
+      });
+    });
+
+    it("should use custom fetcher that returns legacy gas price", async () => {
+      (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
+
+      const customGasPriceFetcher = jest.fn().mockResolvedValue({
+        gasPrice: BigNumber.from("25000000000"), // 25 gwei
+      });
+
+      mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
+
+      const params: TransactionParams = {
+        signer: mockSigner,
+        txRequest: {
+          to: "0x1234567890123456789012345678901234567890",
+          value: BigNumber.from("1000000000000000000"),
+        },
+        operationName: "Test Transaction",
+        customGasPriceFetcher,
+      };
+
+      const result = await executeTransaction(params);
+
+      expect(result).toBe(mockTxHash);
+      expect(customGasPriceFetcher).toHaveBeenCalledWith(mockProvider);
+      expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
+        to: "0x1234567890123456789012345678901234567890",
+        value: BigNumber.from("1000000000000000000"),
+        gasPrice: BigNumber.from("25000000000"),
+      });
+    });
+  });
 });
