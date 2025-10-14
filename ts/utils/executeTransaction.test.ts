@@ -531,5 +531,43 @@ describe("executeTransaction", () => {
         gasPrice: BigNumber.from("25000000000"),
       });
     });
+
+    it("should fallback to provider.getFeeData when custom fetcher fails", async () => {
+      (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
+
+      const customGasPriceFetcher = jest
+        .fn()
+        .mockRejectedValue(new Error("Custom fetcher failed"));
+
+      mockSigner.getFeeData.mockResolvedValue({
+        maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
+        maxPriorityFeePerGas: BigNumber.from("2000000000"), // 2 gwei
+        gasPrice: null,
+      });
+
+      mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
+
+      const params: TransactionParams = {
+        signer: mockSigner,
+        txRequest: {
+          to: "0x1234567890123456789012345678901234567890",
+          value: BigNumber.from("1000000000000000000"),
+        },
+        operationName: "Test Transaction",
+        customGasPriceFetcher,
+      };
+
+      const result = await executeTransaction(params);
+
+      expect(result).toBe(mockTxHash);
+      expect(customGasPriceFetcher).toHaveBeenCalled();
+      expect(mockSigner.getFeeData).toHaveBeenCalled();
+      expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
+        to: "0x1234567890123456789012345678901234567890",
+        value: BigNumber.from("1000000000000000000"),
+        maxFeePerGas: BigNumber.from("20000000000"),
+        maxPriorityFeePerGas: BigNumber.from("2000000000"),
+      });
+    });
   });
 });
