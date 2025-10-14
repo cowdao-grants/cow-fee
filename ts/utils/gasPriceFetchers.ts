@@ -4,6 +4,7 @@ import {
   GasPriceDataEIP1559,
 } from "./executeTransaction";
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
+import { toPlainObject } from "./misc";
 
 /**
  * Network-specific gas price fetchers mapped by chain ID
@@ -72,8 +73,7 @@ export function createGasPriceFetcher(
     };
 
     console.log(
-      `Gas price (${speed}): maxFee=${gasPrices.maxFee} gwei, maxPriorityFee=${gasPrices.maxPriorityFee} gwei: `,
-      gasPriceData
+      `Gas price (${speed}): maxFee=${gasPrices.maxFee} gwei, maxPriorityFee=${gasPrices.maxPriorityFee}`
     );
 
     return gasPriceData;

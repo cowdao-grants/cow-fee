@@ -1,5 +1,6 @@
 import { BigNumber, ethers } from "ethers";
 import { executeTransaction, TransactionParams } from "./executeTransaction";
+import { SupportedChainId } from "@cowprotocol/cow-sdk";
 
 // Mock ethers
 jest.mock("ethers", () => {
@@ -25,10 +26,17 @@ jest.mock("./misc", () => ({
     }
   },
   withTimeout: jest.fn(),
+  toPlainObject: (obj: any) => obj,
+}));
+
+// Mock the gasPriceFetchers module
+jest.mock("./gasPriceFetchers", () => ({
+  getGasPriceFetcherForNetwork: jest.fn(),
 }));
 
 // Import after mocking
 import { TimeoutError, withTimeout } from "./misc";
+import { getGasPriceFetcherForNetwork } from "./gasPriceFetchers";
 
 const mockTxHash = "0x1234567890abcdef";
 
@@ -45,6 +53,8 @@ describe("executeTransaction", () => {
     // Mock provider
     mockProvider = {
       waitForTransaction: jest.fn(),
+      getFeeData: jest.fn(),
+      getGasPrice: jest.fn(),
     };
 
     // Mock signer with getFeeData and getGasPrice methods
@@ -66,6 +76,9 @@ describe("executeTransaction", () => {
       transactionHash: mockTxHash,
       status: 1,
     };
+
+    // Mock getGasPriceFetcherForNetwork to return undefined by default (use provider.getFeeData)
+    (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(undefined);
   });
 
   describe("executeTransaction - Success cases", () => {
@@ -81,6 +94,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -97,6 +111,7 @@ describe("executeTransaction", () => {
         value: BigNumber.from("1000000000000000000"),
         maxFeePerGas: BigNumber.from("20000000000"),
         maxPriorityFeePerGas: BigNumber.from("2000000000"),
+        gasPrice: undefined,
       });
     });
 
@@ -112,6 +127,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -127,6 +143,8 @@ describe("executeTransaction", () => {
         to: "0x1234567890123456789012345678901234567890",
         value: BigNumber.from("1000000000000000000"),
         gasPrice: BigNumber.from("20000000000"),
+        maxFeePerGas: undefined,
+        maxPriorityFeePerGas: undefined,
       });
     });
 
@@ -150,6 +168,7 @@ describe("executeTransaction", () => {
       mockProvider.waitForTransaction.mockResolvedValue(replacementReceipt);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -189,6 +208,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -220,6 +240,7 @@ describe("executeTransaction", () => {
         .mockResolvedValueOnce(mockReceipt);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -256,6 +277,7 @@ describe("executeTransaction", () => {
       (withTimeout as jest.Mock).mockRejectedValue(timeoutError);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -287,6 +309,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -313,6 +336,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -342,6 +366,7 @@ describe("executeTransaction", () => {
         .mockResolvedValueOnce(mockReceipt);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -377,6 +402,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -411,6 +437,7 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -426,6 +453,8 @@ describe("executeTransaction", () => {
         to: "0x1234567890123456789012345678901234567890",
         value: BigNumber.from("1000000000000000000"),
         gasPrice: BigNumber.from("20000000000"),
+        maxFeePerGas: undefined,
+        maxPriorityFeePerGas: undefined,
       });
     });
 
@@ -445,6 +474,7 @@ describe("executeTransaction", () => {
         .mockResolvedValueOnce(mockReceipt);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.MAINNET,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
@@ -468,8 +498,8 @@ describe("executeTransaction", () => {
     });
   });
 
-  describe("Custom gas price fetcher", () => {
-    it("should use custom gas price fetcher when provided", async () => {
+  describe("Chain-specific gas price fetcher", () => {
+    it("should use chain-specific gas price fetcher when available", async () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       const customGasPriceFetcher = jest.fn().mockResolvedValue({
@@ -477,21 +507,28 @@ describe("executeTransaction", () => {
         maxPriorityFeePerGas: BigNumber.from("3000000000"), // 3 gwei
       });
 
+      (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(
+        customGasPriceFetcher
+      );
+
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.POLYGON,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
           value: BigNumber.from("1000000000000000000"),
         },
         operationName: "Test Transaction",
-        customGasPriceFetcher,
       };
 
       const result = await executeTransaction(params);
 
       expect(result).toBe(mockTxHash);
+      expect(getGasPriceFetcherForNetwork).toHaveBeenCalledWith(
+        SupportedChainId.POLYGON
+      );
       expect(customGasPriceFetcher).toHaveBeenCalled();
       expect(mockSigner.getFeeData).not.toHaveBeenCalled();
       expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
@@ -499,45 +536,59 @@ describe("executeTransaction", () => {
         value: BigNumber.from("1000000000000000000"),
         maxFeePerGas: BigNumber.from("30000000000"),
         maxPriorityFeePerGas: BigNumber.from("3000000000"),
+        gasPrice: undefined,
       });
     });
 
-    it("should use custom fetcher that returns legacy gas price", async () => {
+    it("should use chain-specific fetcher that returns legacy gas price", async () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       const customGasPriceFetcher = jest.fn().mockResolvedValue({
         gasPrice: BigNumber.from("25000000000"), // 25 gwei
       });
 
+      (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(
+        customGasPriceFetcher
+      );
+
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.GNOSIS_CHAIN,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
           value: BigNumber.from("1000000000000000000"),
         },
         operationName: "Test Transaction",
-        customGasPriceFetcher,
       };
 
       const result = await executeTransaction(params);
 
       expect(result).toBe(mockTxHash);
+      expect(getGasPriceFetcherForNetwork).toHaveBeenCalledWith(
+        SupportedChainId.GNOSIS_CHAIN
+      );
       expect(customGasPriceFetcher).toHaveBeenCalled();
       expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
         to: "0x1234567890123456789012345678901234567890",
         value: BigNumber.from("1000000000000000000"),
         gasPrice: BigNumber.from("25000000000"),
+        maxFeePerGas: undefined,
+        maxPriorityFeePerGas: undefined,
       });
     });
 
-    it("should fallback to provider.getFeeData when custom fetcher fails", async () => {
+    it("should fallback to provider.getFeeData when chain-specific fetcher fails", async () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       const customGasPriceFetcher = jest
         .fn()
         .mockRejectedValue(new Error("Custom fetcher failed"));
+
+      (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(
+        customGasPriceFetcher
+      );
 
       mockSigner.getFeeData.mockResolvedValue({
         maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
@@ -548,18 +599,21 @@ describe("executeTransaction", () => {
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
 
       const params: TransactionParams = {
+        chainId: SupportedChainId.POLYGON,
         signer: mockSigner,
         txRequest: {
           to: "0x1234567890123456789012345678901234567890",
           value: BigNumber.from("1000000000000000000"),
         },
         operationName: "Test Transaction",
-        customGasPriceFetcher,
       };
 
       const result = await executeTransaction(params);
 
       expect(result).toBe(mockTxHash);
+      expect(getGasPriceFetcherForNetwork).toHaveBeenCalledWith(
+        SupportedChainId.POLYGON
+      );
       expect(customGasPriceFetcher).toHaveBeenCalled();
       expect(mockSigner.getFeeData).toHaveBeenCalled();
       expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
@@ -567,6 +621,7 @@ describe("executeTransaction", () => {
         value: BigNumber.from("1000000000000000000"),
         maxFeePerGas: BigNumber.from("20000000000"),
         maxPriorityFeePerGas: BigNumber.from("2000000000"),
+        gasPrice: undefined,
       });
     });
   });

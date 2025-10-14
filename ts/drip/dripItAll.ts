@@ -46,6 +46,7 @@ export async function dripItAll(
   } else if (ethToWrap.gt(0)) {
     // Handles the case where there's no tokens to swap, but we still have to drip to wrap ETH
     await drip({
+      chainId: config.chainId,
       moduleContract,
       signer,
       toApprove: [],

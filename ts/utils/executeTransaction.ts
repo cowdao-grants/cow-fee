@@ -3,7 +3,9 @@ import {
   TransactionReceipt,
   TransactionRequest,
 } from "@ethersproject/abstract-provider";
-import { TimeoutError, withTimeout } from "./misc";
+import { TimeoutError, toPlainObject, withTimeout } from "./misc";
+import { SupportedChainId } from "@cowprotocol/cow-sdk";
+import { getGasPriceFetcherForNetwork } from "./gasPriceFetchers";
 
 const GAS_INCREASE_STEP = 10; // +10% increase per retry
 const MAX_GAS_INCREASE = 100; // +100% of original gas price
@@ -11,6 +13,11 @@ const WAIT_TIME_FOR_MAX_GAS_PRICE_MILLIS = 3600 * 1000; // 1 hour
 const TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS = 5 * 60 * 1000; // 5 min
 
 export interface TransactionParams {
+  /**
+   * The chain ID to use for the transaction
+   */
+  chainId: SupportedChainId;
+
   /**
    * The signer to use for the transaction
    */
@@ -40,11 +47,6 @@ export interface TransactionParams {
    * The timeout in milliseconds before increasing the gas price. Default is 5 minutes.
    */
   timeoutBeforeIncreasingGasPrice?: number;
-
-  /**
-   * Optional custom gas price fetcher. If not provided, uses the default provider.getFeeData()
-   */
-  customGasPriceFetcher?: CustomGasPriceFetcher;
 }
 
 export type GasPriceData = GasPriceDataEIP1559 | GasPriceDataLegacy;
@@ -75,17 +77,17 @@ export async function executeTransaction(
   params: TransactionParams
 ): Promise<string | null> {
   const {
+    chainId,
     signer,
     txRequest: baseTxRequest,
     operationName,
     maxGasIncreasePercentage = MAX_GAS_INCREASE,
     waitTimeForMaxGasPrice = WAIT_TIME_FOR_MAX_GAS_PRICE_MILLIS,
     timeoutBeforeIncreasingGasPrice = TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS,
-    customGasPriceFetcher,
   } = params;
 
   // Get initial fee estimation
-  const originalGasPrice = await getGasPriceData(signer, customGasPriceFetcher);
+  const originalGasPrice = await getGasPriceData(chainId, signer);
 
   // Calculate the maximum gas price we are willing to pay
   const maxGasPrice = increaseByPercentage(
@@ -180,10 +182,12 @@ function isGasPriceDataEIP1559(
 }
 
 async function getGasPriceData(
-  provider: ethers.providers.JsonRpcProvider | ethers.Signer,
-  customFetcher?: CustomGasPriceFetcher
+  chainId: SupportedChainId,
+  provider: ethers.providers.JsonRpcProvider | ethers.Signer
 ): Promise<GasPriceData> {
-  // Use custom fetcher if provided
+  const customFetcher = getGasPriceFetcherForNetwork(chainId);
+
+  // Use custom fetcher if available
   if (customFetcher) {
     const gasPriceData = await customFetcher().catch((error) => {
       console.error(
@@ -195,11 +199,16 @@ async function getGasPriceData(
 
     // Only return when the call succeeded, otherwise use the default price strategy
     if (gasPriceData) {
+      console.log(
+        "Get gas price estimation (from custom fetcher):",
+        toPlainObject(gasPriceData)
+      );
       return gasPriceData;
     }
   }
 
   const feeData = await provider.getFeeData();
+  console.log("Get gas price data (from provider):", toPlainObject(feeData));
 
   if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
     return {

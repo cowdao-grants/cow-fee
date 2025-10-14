@@ -1,7 +1,44 @@
 import { OrderBookApi, SupportedChainId } from "@cowprotocol/cow-sdk";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { multicall3Abi } from "../abi";
 import { networkSpecificConfigs, SUPPORTED_NETWORKS } from "../config";
+
+/**
+ * Converts an object with BigNumber instances into a plain object for logging
+ * BigNumbers are converted to strings, other values are preserved
+ *
+ * @param obj - The object to convert
+ * @returns A new object with BigNumbers converted to strings
+ */
+export function toPlainObject(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // Handle BigNumber instances
+  if (BigNumber.isBigNumber(obj)) {
+    return obj.toString();
+  }
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map((item) => toPlainObject(item));
+  }
+
+  // Handle objects
+  if (typeof obj === "object") {
+    const result: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        result[key] = toPlainObject(obj[key]);
+      }
+    }
+    return result;
+  }
+
+  // Return primitives as-is
+  return obj;
+}
 
 export class TimeoutError extends Error {
   constructor(operationName: string, timeoutMs: number) {
