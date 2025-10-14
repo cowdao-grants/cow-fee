@@ -14,7 +14,7 @@ const GAS_PRICE_FETCHERS: Partial<
 > = {
   // Polygon mainnet
   [SupportedChainId.POLYGON]: createGasPriceFetcher(
-    "fast",
+    "standard",
     "https://gasstation.polygon.technology/v2"
   ),
 };
