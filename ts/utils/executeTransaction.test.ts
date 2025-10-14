@@ -492,7 +492,7 @@ describe("executeTransaction", () => {
       const result = await executeTransaction(params);
 
       expect(result).toBe(mockTxHash);
-      expect(customGasPriceFetcher).toHaveBeenCalledWith(mockProvider);
+      expect(customGasPriceFetcher).toHaveBeenCalled();
       expect(mockSigner.getFeeData).not.toHaveBeenCalled();
       expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
         to: "0x1234567890123456789012345678901234567890",
@@ -524,7 +524,7 @@ describe("executeTransaction", () => {
       const result = await executeTransaction(params);
 
       expect(result).toBe(mockTxHash);
-      expect(customGasPriceFetcher).toHaveBeenCalledWith(mockProvider);
+      expect(customGasPriceFetcher).toHaveBeenCalled();
       expect(mockSigner.sendTransaction).toHaveBeenCalledWith({
         to: "0x1234567890123456789012345678901234567890",
         value: BigNumber.from("1000000000000000000"),

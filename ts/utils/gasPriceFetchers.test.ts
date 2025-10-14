@@ -2,7 +2,6 @@ import { BigNumber } from "ethers";
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import {
   createGasPriceFetcher,
-  createCustomGasPriceFetcher,
   getGasPriceFetcherForNetwork,
 } from "./gasPriceFetchers";
 
@@ -10,17 +9,9 @@ import {
 global.fetch = jest.fn();
 
 describe("gasPriceFetchers", () => {
-  let mockProvider: any;
-
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetAllMocks();
-
-    // Mock provider
-    mockProvider = {
-      getFeeData: jest.fn(),
-      getGasPrice: jest.fn(),
-    };
   });
 
   describe("createGasPriceFetcher", () => {
@@ -52,7 +43,7 @@ describe("gasPriceFetchers", () => {
         "fast",
         "https://gasstation.polygon.technology/v2"
       );
-      const result = await fetcher(mockProvider);
+      const result = await fetcher();
 
       expect(global.fetch).toHaveBeenCalledWith(
         "https://gasstation.polygon.technology/v2"
@@ -73,7 +64,7 @@ describe("gasPriceFetchers", () => {
         "standard",
         "https://gasstation.polygon.technology/v2"
       );
-      const result = await fetcher(mockProvider);
+      const result = await fetcher();
 
       expect(result).toEqual({
         maxFeePerGas: BigNumber.from(Math.ceil(60.610503612 * 1e9)),
@@ -91,7 +82,7 @@ describe("gasPriceFetchers", () => {
         "safeLow",
         "https://gasstation.polygon.technology/v2"
       );
-      const result = await fetcher(mockProvider);
+      const result = await fetcher();
 
       expect(result).toEqual({
         maxFeePerGas: BigNumber.from(Math.ceil(58.494393377 * 1e9)),
@@ -107,7 +98,7 @@ describe("gasPriceFetchers", () => {
 
       const customUrl = "https://custom-gas-api.example.com/v2";
       const fetcher = createGasPriceFetcher("fast", customUrl);
-      await fetcher(mockProvider);
+      await fetcher();
 
       expect(global.fetch).toHaveBeenCalledWith(customUrl);
     });
@@ -124,7 +115,7 @@ describe("gasPriceFetchers", () => {
         "https://gasstation.polygon.technology/v2"
       );
 
-      await expect(fetcher(mockProvider)).rejects.toThrow(
+      await expect(fetcher()).rejects.toThrow(
         "Gas station API returned 500: Internal Server Error"
       );
     });
@@ -137,127 +128,7 @@ describe("gasPriceFetchers", () => {
         "https://gasstation.polygon.technology/v2"
       );
 
-      await expect(fetcher(mockProvider)).rejects.toThrow("Network error");
-    });
-  });
-
-  describe("createCustomGasPriceFetcher", () => {
-    it("should use custom parser for API response", async () => {
-      const mockApiResponse = {
-        maxGasPrice: 100,
-        priorityFee: 10,
-      };
-
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        json: async () => mockApiResponse,
-      });
-
-      const parser = (data: any) => ({
-        maxFeePerGas: BigNumber.from(data.maxGasPrice * 1e9),
-        maxPriorityFeePerGas: BigNumber.from(data.priorityFee * 1e9),
-      });
-
-      const fetcher = createCustomGasPriceFetcher(
-        "https://custom-api.example.com/gas",
-        parser
-      );
-
-      const result = await fetcher(mockProvider);
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://custom-api.example.com/gas"
-      );
-      expect(result).toEqual({
-        maxFeePerGas: BigNumber.from(100 * 1e9),
-        maxPriorityFeePerGas: BigNumber.from(10 * 1e9),
-      });
-    });
-
-    it("should support legacy gas price format", async () => {
-      const mockApiResponse = {
-        gasPrice: 50,
-      };
-
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        json: async () => mockApiResponse,
-      });
-
-      const parser = (data: any) => ({
-        gasPrice: BigNumber.from(data.gasPrice * 1e9),
-      });
-
-      const fetcher = createCustomGasPriceFetcher(
-        "https://custom-api.example.com/gas",
-        parser
-      );
-
-      const result = await fetcher(mockProvider);
-
-      expect(result).toEqual({
-        gasPrice: BigNumber.from(50 * 1e9),
-      });
-    });
-
-    it("should fallback to provider on API error", async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: false,
-        status: 404,
-        statusText: "Not Found",
-      });
-
-      mockProvider.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("60000000000"),
-        maxPriorityFeePerGas: BigNumber.from("6000000000"),
-        gasPrice: null,
-      });
-
-      const parser = (data: any) => ({
-        maxFeePerGas: BigNumber.from(data.maxGasPrice * 1e9),
-        maxPriorityFeePerGas: BigNumber.from(data.priorityFee * 1e9),
-      });
-
-      const fetcher = createCustomGasPriceFetcher(
-        "https://custom-api.example.com/gas",
-        parser
-      );
-
-      const result = await fetcher(mockProvider);
-
-      expect(result).toEqual({
-        maxFeePerGas: BigNumber.from("60000000000"),
-        maxPriorityFeePerGas: BigNumber.from("6000000000"),
-      });
-    });
-
-    it("should handle parser errors gracefully", async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        json: async () => ({}),
-      });
-
-      const parser = () => {
-        throw new Error("Parser error");
-      };
-
-      mockProvider.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("70000000000"),
-        maxPriorityFeePerGas: BigNumber.from("7000000000"),
-        gasPrice: null,
-      });
-
-      const fetcher = createCustomGasPriceFetcher(
-        "https://custom-api.example.com/gas",
-        parser
-      );
-
-      const result = await fetcher(mockProvider);
-
-      expect(result).toEqual({
-        maxFeePerGas: BigNumber.from("70000000000"),
-        maxPriorityFeePerGas: BigNumber.from("7000000000"),
-      });
+      await expect(fetcher()).rejects.toThrow("Network error");
     });
   });
 

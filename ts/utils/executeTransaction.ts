@@ -61,9 +61,7 @@ interface GasPriceDataLegacy {
 /**
  * Custom gas price fetcher function type
  */
-export type CustomGasPriceFetcher = (
-  provider: ethers.providers.Provider
-) => Promise<GasPriceData>;
+export type CustomGasPriceFetcher = () => Promise<GasPriceData>;
 
 /**
  * Executes a transaction with automatic gas price increases, timeout handling, and transaction replacement handling.
@@ -187,12 +185,7 @@ async function getGasPriceData(
 ): Promise<GasPriceData> {
   // Use custom fetcher if provided
   if (customFetcher) {
-    const actualProvider =
-      "provider" in provider && provider.provider
-        ? provider.provider
-        : (provider as ethers.providers.Provider);
-
-    const gasPriceData = await customFetcher(actualProvider).catch((error) => {
+    const gasPriceData = await customFetcher().catch((error) => {
       console.error(
         `Failed to fetch gas prices from custom fetcher: ${error}. Defaulting to provider.getFeeData()`
       );
@@ -200,7 +193,7 @@ async function getGasPriceData(
       return null;
     });
 
-    // Only return the gas price date if the fetcher succeeded, otherwise use the default strategy
+    // Only return when the call succeeded, otherwise use the default price strategy
     if (gasPriceData) {
       return gasPriceData;
     }
