@@ -24,13 +24,13 @@ export async function readConfig(): Promise<
     .addOption(new Option("--rpc-url <rpc-url>"))
     .addOption(new Option(
         "--max-fee-per-gas <gwei>",
-        "Override maxFeePerGas transaction parameter"
+        "Override maxFeePerGas transaction parameter. Units specified in GWEI"
     )
       .argParser(x => ethers.utils.parseUnits(x, 'gwei'))
       ) 
     .addOption(new Option(
         "--max-priority-fee-per-gas <gwei>",
-        "Override maxPriorityFeePerGas transaction parameter"
+        "Override maxPriorityFeePerGas transaction parameter. Units specified in GWEI"
     )
       .argParser(x => ethers.utils.parseUnits(x, 'gwei'))
       )
