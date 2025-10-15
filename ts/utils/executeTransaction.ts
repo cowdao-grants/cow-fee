@@ -73,8 +73,8 @@ export async function executeTransaction(
     timeoutBeforeIncreasingGasPrice = TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS,
   } = params;
 
-  // Get initial fee estimation
-  const originalGasPrice = await getGasPriceData(signer);
+  // Get initial fee estimation - use provided gas prices if available, otherwise fetch from network
+  const originalGasPrice = await getGasPriceData(signer, baseTxRequest);
 
   // Calculate the maximum gas price we are willing to pay
   const maxGasPrice = increaseByPercentage(
@@ -169,8 +169,24 @@ function isGasPriceDataEIP1559(
 }
 
 async function getGasPriceData(
-  provider: ethers.providers.JsonRpcProvider | ethers.Signer
+  provider: ethers.providers.JsonRpcProvider | ethers.Signer,
+  txRequest?: TransactionRequest
 ): Promise<GasPriceData> {
+  // If transaction request already has gas prices set, use those
+  if (txRequest?.maxFeePerGas && txRequest?.maxPriorityFeePerGas) {
+    return {
+      maxFeePerGas: txRequest.maxFeePerGas,
+      maxPriorityFeePerGas: txRequest.maxPriorityFeePerGas,
+    };
+  }
+
+  if (txRequest?.gasPrice) {
+    return {
+      gasPrice: txRequest.gasPrice,
+    };
+  }
+
+  // Otherwise fetch from network
   const feeData = await provider.getFeeData();
 
   if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
