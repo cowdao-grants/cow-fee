@@ -1,8 +1,8 @@
-import { BigNumber, ContractTransaction, ethers } from "ethers";
 import {
-  TransactionReceipt,
-  TransactionRequest,
+    TransactionReceipt,
+    TransactionRequest,
 } from "@ethersproject/abstract-provider";
+import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { TimeoutError, withTimeout } from "./misc";
 
 const GAS_INCREASE_STEP = 10; // +10% increase per retry
@@ -175,14 +175,14 @@ async function getGasPriceData(
   // If transaction request already has gas prices set, use those
   if (txRequest?.maxFeePerGas && txRequest?.maxPriorityFeePerGas) {
     return {
-      maxFeePerGas: txRequest.maxFeePerGas,
-      maxPriorityFeePerGas: txRequest.maxPriorityFeePerGas,
+      maxFeePerGas: BigNumber.from(txRequest.maxFeePerGas),
+      maxPriorityFeePerGas: BigNumber.from(txRequest.maxPriorityFeePerGas),
     };
   }
 
   if (txRequest?.gasPrice) {
     return {
-      gasPrice: txRequest.gasPrice,
+      gasPrice: BigNumber.from(txRequest.gasPrice),
     };
   }
 
