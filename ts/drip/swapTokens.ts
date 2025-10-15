@@ -60,5 +60,7 @@ export const swapTokens = async (
     toApprove,
     toDrip,
     confirmDrip: config.confirmDrip,
+    maxFeePerGas: config.maxFeePerGas,
+    maxPriorityFeePerGas: config.maxPriorityFeePerGas,
   });
 };
