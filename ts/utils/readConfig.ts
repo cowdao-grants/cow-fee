@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import { Command, Option } from "@commander-js/extra-typings";
 import { moduleAbi } from "../abi";
@@ -22,6 +22,18 @@ export async function readConfig(): Promise<
     .name("cow-fee")
     .addOption(new Option("--network <network>").choices(SUPPORTED_NETWORKS))
     .addOption(new Option("--rpc-url <rpc-url>"))
+    .addOption(new Option(
+        "--max-fee-per-gas <gwei>",
+        "Override maxFeePerGas transaction parameter"
+    )
+      .argParser(x => ethers.utils.parseUnits(x, 'gwei'))
+      ) 
+    .addOption(new Option(
+        "--max-priority-fee-per-gas <gwei>",
+        "Override maxPriorityFeePerGas transaction parameter"
+    )
+      .argParser(x => ethers.utils.parseUnits(x, 'gwei'))
+      )
     .addOption(
       new Option(
         "--max-orders <max-orders>",
@@ -68,6 +80,8 @@ export async function readConfig(): Promise<
 
   const {
     network: selectedNetwork,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
     maxOrders,
     buyAmountSlippageBps,
     module,
@@ -120,6 +134,8 @@ export async function readConfig(): Promise<
       gpv2Settlement,
       vaultRelayer,
       rpcUrl,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
       network,
       wrappedNativeToken,
       minOut,

@@ -1,5 +1,5 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 interface NetworkDetails {
   rpcUrl: string;
@@ -79,6 +79,8 @@ export interface IConfig {
   gpv2Settlement: string;
   vaultRelayer: string;
   rpcUrl: string;
+  maxFeePerGas?: BigNumber;
+  maxPriorityFeePerGas?: BigNumber;
   network: (typeof SUPPORTED_NETWORKS)[number];
   wrappedNativeToken: string;
   minOut: bigint;
