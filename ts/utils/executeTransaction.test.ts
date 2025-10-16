@@ -2,6 +2,9 @@ import { BigNumber, ethers } from "ethers";
 import { executeTransaction, TransactionParams } from "./executeTransaction";
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 
+const GWEI_20 = ethers.utils.parseUnits("20", "gwei");
+const GWEI_2 = ethers.utils.parseUnits("2", "gwei");
+
 // Mock ethers
 jest.mock("ethers", () => {
   const originalEthers = jest.requireActual("ethers");
@@ -86,8 +89,8 @@ describe("executeTransaction", () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       mockSigner.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
-        maxPriorityFeePerGas: BigNumber.from("2000000000"), // 2 gwei
+        maxFeePerGas: GWEI_20,
+        maxPriorityFeePerGas: GWEI_2,
         gasPrice: null,
       });
 
@@ -121,7 +124,7 @@ describe("executeTransaction", () => {
       mockSigner.getFeeData.mockResolvedValue({
         maxFeePerGas: null,
         maxPriorityFeePerGas: null,
-        gasPrice: BigNumber.from("20000000000"), // 20 gwei
+        gasPrice: GWEI_20,
       });
 
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
@@ -226,8 +229,8 @@ describe("executeTransaction", () => {
   describe("executeTransaction - Gas price increase scenarios", () => {
     it("should increase gas price on timeout and retry", async () => {
       mockSigner.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
-        maxPriorityFeePerGas: BigNumber.from("2000000000"), // 2 gwei
+        maxFeePerGas: GWEI_20,
+        maxPriorityFeePerGas: GWEI_2,
         gasPrice: null,
       });
       const timeoutError = new TimeoutError("Transaction timeout", 5000);
@@ -265,8 +268,8 @@ describe("executeTransaction", () => {
 
     it("should respect maximum gas price increase", async () => {
       mockSigner.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
-        maxPriorityFeePerGas: BigNumber.from("2000000000"), // 2 gwei
+        maxFeePerGas: GWEI_20,
+        maxPriorityFeePerGas: GWEI_2,
         gasPrice: null,
       });
 
@@ -352,8 +355,8 @@ describe("executeTransaction", () => {
   describe("executeTransaction - Custom parameters", () => {
     it("should use custom gas increase percentage", async () => {
       mockSigner.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
-        maxPriorityFeePerGas: BigNumber.from("2000000000"), // 2 gwei
+        maxFeePerGas: GWEI_20,
+        maxPriorityFeePerGas: GWEI_2,
         gasPrice: null,
       });
 
@@ -431,7 +434,7 @@ describe("executeTransaction", () => {
       mockSigner.getFeeData.mockResolvedValue({
         maxFeePerGas: null,
         maxPriorityFeePerGas: null,
-        gasPrice: BigNumber.from("20000000000"), // 20 gwei
+        gasPrice: GWEI_20,
       });
 
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
@@ -462,7 +465,7 @@ describe("executeTransaction", () => {
       mockSigner.getFeeData.mockResolvedValue({
         maxFeePerGas: null,
         maxPriorityFeePerGas: null,
-        gasPrice: BigNumber.from("20000000000"), // 20 gwei
+        gasPrice: GWEI_20,
       });
 
       mockSigner.sendTransaction.mockResolvedValue(mockTransaction);
@@ -503,8 +506,8 @@ describe("executeTransaction", () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       const customGasPriceFetcher = jest.fn().mockResolvedValue({
-        maxFeePerGas: ethers.utils.parseUnits("30", "gwei"), // 30 gwei
-        maxPriorityFeePerGas: ethers.utils.parseUnits("3", "gwei"), // 3 gwei
+        maxFeePerGas: ethers.utils.parseUnits("30", "gwei"),
+        maxPriorityFeePerGas: ethers.utils.parseUnits("3", "gwei"),
       });
 
       (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(
@@ -544,7 +547,7 @@ describe("executeTransaction", () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       const customGasPriceFetcher = jest.fn().mockResolvedValue({
-        gasPrice: BigNumber.from("25000000000"), // 25 gwei
+        gasPrice: BigNumber.from(ethers.utils.parseUnits("25", "gwei")),
       });
 
       (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(
@@ -591,8 +594,8 @@ describe("executeTransaction", () => {
       );
 
       mockSigner.getFeeData.mockResolvedValue({
-        maxFeePerGas: BigNumber.from("20000000000"), // 20 gwei
-        maxPriorityFeePerGas: BigNumber.from("2000000000"), // 2 gwei
+        maxFeePerGas: GWEI_20,
+        maxPriorityFeePerGas: GWEI_2,
         gasPrice: null,
       });
 
