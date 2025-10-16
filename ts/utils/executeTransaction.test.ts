@@ -503,8 +503,8 @@ describe("executeTransaction", () => {
       (withTimeout as jest.Mock).mockResolvedValue(mockReceipt);
 
       const customGasPriceFetcher = jest.fn().mockResolvedValue({
-        maxFeePerGas: BigNumber.from("30000000000"), // 30 gwei
-        maxPriorityFeePerGas: BigNumber.from("3000000000"), // 3 gwei
+        maxFeePerGas: ethers.utils.parseUnits("30", "gwei"), // 30 gwei
+        maxPriorityFeePerGas: ethers.utils.parseUnits("3", "gwei"), // 3 gwei
       });
 
       (getGasPriceFetcherForNetwork as jest.Mock).mockReturnValue(
