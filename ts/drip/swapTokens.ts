@@ -55,6 +55,7 @@ export const swapTokens = async (
   }));
 
   await drip({
+    chainId: config.chainId,
     moduleContract,
     signer: signerWithProvider,
     toApprove,
