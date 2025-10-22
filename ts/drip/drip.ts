@@ -3,8 +3,10 @@ import { BigNumber, ethers } from "ethers";
 import { TransactionRequest } from "@ethersproject/abstract-provider";
 import { confirmMessage } from "../utils/readline";
 import { executeTransaction } from "../utils/executeTransaction";
+import { SupportedChainId } from "@cowprotocol/cow-sdk";
 
 export interface DripParams {
+  chainId: SupportedChainId;
   moduleContract: ethers.Contract;
   signer: ethers.Signer;
   toApprove: string[];
@@ -15,7 +17,7 @@ export interface DripParams {
 }
 
 export async function drip(params: DripParams) {
-  const { signer, confirmDrip } = params;
+  const { signer, confirmDrip, chainId } = params;
 
   const txBaseRequest = await getDripTx(params);
 
@@ -29,6 +31,7 @@ export async function drip(params: DripParams) {
   }
 
   await executeTransaction({
+    chainId,
     signer: signer,
     txRequest: txBaseRequest,
     operationName: "Drip",
