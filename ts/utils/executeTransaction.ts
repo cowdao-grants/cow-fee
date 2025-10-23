@@ -1,11 +1,11 @@
+import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import {
     TransactionReceipt,
     TransactionRequest,
 } from "@ethersproject/abstract-provider";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import { TimeoutError, toPlainObject, withTimeout } from "./misc";
-import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { getGasPriceFetcherForNetwork } from "./gasPriceFetchers";
+import { TimeoutError, toPlainObject, withTimeout } from "./misc";
 
 const GAS_INCREASE_STEP = 10; // +10% increase per retry
 const MAX_GAS_INCREASE = 100; // +100% of original gas price
@@ -182,7 +182,6 @@ function isGasPriceDataEIP1559(
 }
 
 async function getGasPriceData(
-<<<<<<< HEAD
   chainId: SupportedChainId,
   provider: ethers.providers.JsonRpcProvider | ethers.Signer,
   txRequest?: TransactionRequest
