@@ -12,6 +12,8 @@ export interface DripParams {
   toApprove: string[];
   toDrip: { token: string; sellAmount: BigNumber; buyAmount: BigNumber }[];
   confirmDrip: boolean;
+  maxFeePerGas?: BigNumber;
+  maxPriorityFeePerGas?: BigNumber;
 }
 
 export async function drip(params: DripParams) {
@@ -63,8 +65,8 @@ async function getDripTx(params: DripParams): Promise<TransactionRequest> {
   const txBaseRequest: TransactionRequest = {
     from: await signerWithProvider.getAddress(),
     to: moduleContract.address,
-    maxFeePerGas: feeData.maxFeePerGas,
-    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas || undefined,
+    maxFeePerGas: params.maxFeePerGas || feeData.maxFeePerGas,
+    maxPriorityFeePerGas: params.maxPriorityFeePerGas || feeData.maxPriorityFeePerGas || undefined,
     data: moduleContract.interface.encodeFunctionData("drip", [
       toApprove,
       toDrip,

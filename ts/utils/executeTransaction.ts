@@ -1,11 +1,11 @@
-import { BigNumber, ContractTransaction, ethers } from "ethers";
-import {
-  TransactionReceipt,
-  TransactionRequest,
-} from "@ethersproject/abstract-provider";
-import { TimeoutError, toPlainObject, withTimeout } from "./misc";
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
+import {
+    TransactionReceipt,
+    TransactionRequest,
+} from "@ethersproject/abstract-provider";
+import { BigNumber, ContractTransaction, ethers } from "ethers";
 import { getGasPriceFetcherForNetwork } from "./gasPriceFetchers";
+import { TimeoutError, toPlainObject, withTimeout } from "./misc";
 
 const GAS_INCREASE_STEP = 10; // +10% increase per retry
 const MAX_GAS_INCREASE = 100; // +100% of original gas price
@@ -86,8 +86,8 @@ export async function executeTransaction(
     timeoutBeforeIncreasingGasPrice = TIMEOUT_BEFORE_INCREASING_GAS_PRICE_MILLIS,
   } = params;
 
-  // Get initial fee estimation
-  const originalGasPrice = await getGasPriceData(chainId, signer);
+  // Get initial fee estimation - use provided gas prices if available, otherwise fetch from network
+  const originalGasPrice = await getGasPriceData(chainId, signer, baseTxRequest);
 
   // Calculate the maximum gas price we are willing to pay
   const maxGasPrice = increaseByPercentage(
@@ -183,8 +183,24 @@ function isGasPriceDataEIP1559(
 
 async function getGasPriceData(
   chainId: SupportedChainId,
-  provider: ethers.providers.JsonRpcProvider | ethers.Signer
+  provider: ethers.providers.JsonRpcProvider | ethers.Signer,
+  txRequest?: TransactionRequest
 ): Promise<GasPriceData> {
+  // If transaction request already has gas prices set, use those
+  if (txRequest?.maxFeePerGas && txRequest?.maxPriorityFeePerGas) {
+    return {
+      maxFeePerGas: BigNumber.from(txRequest.maxFeePerGas),
+      maxPriorityFeePerGas: BigNumber.from(txRequest.maxPriorityFeePerGas),
+    };
+  }
+
+  if (txRequest?.gasPrice) {
+    return {
+      gasPrice: BigNumber.from(txRequest.gasPrice),
+    };
+  }
+
+  // Otherwise fetch from network
   const customFetcher = getGasPriceFetcherForNetwork(chainId);
 
   // Use custom fetcher if available
