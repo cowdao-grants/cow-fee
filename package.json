@@ -2,7 +2,7 @@
   "dependencies": {
     "@commander-js/extra-typings": "^12.0.1",
     "@cowprotocol/app-data": "^3.0.0",
-    "@cowprotocol/cow-sdk": "^6.2.0-RC.1",
+    "@cowprotocol/cow-sdk": "^7.1.5",
     "axios": "^1.6.8",
     "commander": "^12.0.0",
     "ethers": "v5"
