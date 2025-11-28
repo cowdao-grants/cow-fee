@@ -39,6 +39,10 @@
     "8453": {
       "address": "0xb7ec643b48fe7730ef701d10362a9f8a670ac018",
       "transactionHash": "0xc1e856978b945821e986a58ce9fcd6b78fac291be0ca9dc19731ba9ff087d3f6"
+    },
+    "9745": {
+      "address": "0xEF0F60b1E985A748588d57e414aa3E9529b80714",
+      "transactionHash": "0x0319ec27957d549be9558b076bf9878903fb64a10a1a4135afcf472706b64c4d"
     }
   }
 }
