@@ -17,6 +17,7 @@ export const SUPPORTED_NETWORKS = [
   "polygon",
   "lens",
   "bnb",
+  "linea",
 ] as const;
 
 export const networkSpecificConfigs: Record<
@@ -67,6 +68,11 @@ export const networkSpecificConfigs: Record<
     rpcUrl: "https://bsc-dataseed.bnbchain.org",
     explorer: "https://explorer.cow.fi/bnb",
     chainId: SupportedChainId.BNB,
+  },
+  linea: {
+    rpcUrl: "https://rpc.linea.build",
+    explorer: "https://explorer.cow.fi/linea",
+    chainId: SupportedChainId.LINEA,
   },
 };
 
