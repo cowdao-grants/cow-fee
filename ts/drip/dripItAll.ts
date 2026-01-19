@@ -53,6 +53,7 @@ export async function dripItAll(
       toDrip: [],
       maxFeePerGas: config.maxFeePerGas,
       maxPriorityFeePerGas: config.maxPriorityFeePerGas,
+      gasLimit: config.gasLimit,
       confirmDrip: config.confirmDrip,
     });
   }

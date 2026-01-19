@@ -34,6 +34,12 @@ export async function readConfig(): Promise<
     )
       .argParser(x => ethers.utils.parseUnits(x, 'gwei'))
       )
+    .addOption(new Option(
+        "--gas-limit <number>",
+        "Override gasLimit transaction parameter."
+    )
+      .argParser(x => BigNumber.from(x))
+      )
     .addOption(
       new Option(
         "--max-orders <max-orders>",
@@ -82,6 +88,7 @@ export async function readConfig(): Promise<
     network: selectedNetwork,
     maxFeePerGas,
     maxPriorityFeePerGas,
+    gasLimit,
     maxOrders,
     buyAmountSlippageBps,
     module,
@@ -136,6 +143,7 @@ export async function readConfig(): Promise<
       rpcUrl,
       maxFeePerGas,
       maxPriorityFeePerGas,
+      gasLimit,
       network,
       wrappedNativeToken,
       minOut,

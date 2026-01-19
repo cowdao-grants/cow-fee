@@ -87,6 +87,7 @@ export interface IConfig {
   rpcUrl: string;
   maxFeePerGas?: BigNumber;
   maxPriorityFeePerGas?: BigNumber;
+  gasLimit?: BigNumber;
   network: (typeof SUPPORTED_NETWORKS)[number];
   wrappedNativeToken: string;
   minOut: bigint;
