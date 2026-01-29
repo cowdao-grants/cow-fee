@@ -18,6 +18,7 @@ export const SUPPORTED_NETWORKS = [
   "lens",
   "bnb",
   "linea",
+  "plasma",
 ] as const;
 
 export const networkSpecificConfigs: Record<
@@ -73,6 +74,11 @@ export const networkSpecificConfigs: Record<
     rpcUrl: "https://rpc.linea.build",
     explorer: "https://explorer.cow.fi/linea",
     chainId: SupportedChainId.LINEA,
+  },
+  plasma: {
+    rpcUrl: "https://rpc.plasma.to",
+    explorer: "https://explorer.cow.fi/plasma",
+    chainId: SupportedChainId.PLASMA,
   },
 };
 
