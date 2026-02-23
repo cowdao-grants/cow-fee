@@ -19,6 +19,7 @@ export const SUPPORTED_NETWORKS = [
   "bnb",
   "linea",
   "plasma",
+  "ink",
 ] as const;
 
 export const networkSpecificConfigs: Record<
@@ -79,6 +80,11 @@ export const networkSpecificConfigs: Record<
     rpcUrl: "https://rpc.plasma.to",
     explorer: "https://explorer.cow.fi/plasma",
     chainId: SupportedChainId.PLASMA,
+  },
+  ink: {
+    rpcUrl: "https://rpc-gel.inkonchain.com",
+    explorer: "https://explorer.cow.fi/ink",
+    chainId: SupportedChainId.INK,
   },
 };
 
