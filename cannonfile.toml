@@ -1,0 +1,33 @@
+#:schema https://raw.githubusercontent.com/usecannon/cannon/refs/heads/dev/packages/lsp/src/schema.json
+name = "cow-fee"
+version = "1.0.0"
+
+# dummy token for test network only
+[import.dummyToken]
+source = "mintable-token:2.0"
+chainId = 13370
+
+[import.cow]
+source = "cow-settlement:2.0.2"
+
+[var.main]
+salt = "0x0000000000000000000000000000000000000000000000000000000000000001"
+cowSettlement = "<%= cow.Settlement.address %>"
+targetSafe = "<%= AddressZero %>"
+wrappedNativeToken = "<%= dummyToken.Token.address %>"
+keeper = "<%= AddressZero %>"
+appData = "<%= HashZero %>"
+receiver = "<%= AddressZero %>"
+minOut = "0"
+
+[deploy.Fee]
+artifact = "COWFeeModule"
+args = [
+    "<%= settings.cowSettlement %>",
+    "<%= settings.targetSafe %>",
+    "<%= settings.wrappedNativeToken %>",
+    "<%= settings.keeper %>",
+    "<%= settings.appData %>",
+    "<%= settings.receiver %>",
+    "<%= settings.minOut %>"
+]
