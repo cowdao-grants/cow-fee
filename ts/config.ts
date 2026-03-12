@@ -15,7 +15,6 @@ export const SUPPORTED_NETWORKS = [
   "sepolia",
   "avalanche",
   "polygon",
-  "lens",
   "bnb",
   "linea",
   "plasma",
@@ -60,11 +59,6 @@ export const networkSpecificConfigs: Record<
     rpcUrl: "https://polygon-rpc.com",
     explorer: "https://explorer.cow.fi/pol",
     chainId: SupportedChainId.POLYGON,
-  },
-  lens: {
-    rpcUrl: "https://rpc.lens.xyz",
-    explorer: "https://explorer.cow.fi/lens",
-    chainId: SupportedChainId.LENS,
   },
   bnb: {
     rpcUrl: "https://bsc-dataseed.bnbchain.org",
