@@ -50,7 +50,7 @@ export const swapTokens = async (
 
   const toDrip = toActuallySwap.map((token) => ({
     token: token.address,
-    sellAmount: token.balance,
+    sellAmount: token.adjustedBalance,
     buyAmount: token.buyAmount,
   }));
 
