@@ -60,6 +60,7 @@ export const swapTokens = async (
     signer: signerWithProvider,
     toApprove,
     toDrip,
+    leaveDust: config.leaveDust,
     confirmDrip: config.confirmDrip,
     maxFeePerGas: config.maxFeePerGas,
     maxPriorityFeePerGas: config.maxPriorityFeePerGas,

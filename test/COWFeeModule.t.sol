@@ -61,7 +61,7 @@ contract COWFeeModuleTest is Test {
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](0);
         address[] memory approveTokens = new address[](0);
         vm.expectRevert(COWFeeModule.OnlyKeeper.selector);
-        module.drip(approveTokens, swapTokens);
+        module.drip(approveTokens, swapTokens, 0);
     }
 
     function testApprove() external {
@@ -130,7 +130,7 @@ contract COWFeeModuleTest is Test {
 
         vm.recordLogs();
         vm.prank(keeper);
-        module.drip(approveTokens, swapTokens);
+        module.drip(approveTokens, swapTokens, 0);
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         bool found = false;
@@ -168,7 +168,7 @@ contract COWFeeModuleTest is Test {
 
         vm.prank(keeper);
         vm.expectRevert(COWFeeModule.BuyAmountTooSmall.selector);
-        module.drip(approveTokens, swapTokens);
+        module.drip(approveTokens, swapTokens, 0);
     }
 
     function testDripWeth() external {
@@ -181,21 +181,21 @@ contract COWFeeModuleTest is Test {
         // WHEN: drip is called
         // THEN: WETH balance is increased by wethBalance
         uint256 expectedSentWeth = minOut;
-        dripAndAssertBalances(ethBalance, wethBalance, expectedSentWeth, "drip didn't transfer weth as expected");
+        dripAndAssertBalances(ethBalance, wethBalance, expectedSentWeth, 0, "drip didn't transfer weth as expected");
     }
 
     function testDripNotEnoughWeth() external {
         // GIVEN: Ether balance is 0
         uint256 ethBalance = 0;
 
-        // GIVEN: WETH balance is minOut
+        // GIVEN: WETH balance is minOut - 1
         uint256 wethBalance = minOut - 1;
 
         // WHEN: drip is called
         // THEN: WETH balance doesn't change
         uint256 expectedSentWeth = 0;
         dripAndAssertBalances(
-            ethBalance, wethBalance, expectedSentWeth, "drip modified WETH balance when no transfer was expected"
+            ethBalance, wethBalance, expectedSentWeth, 0, "drip modified WETH balance when no transfer was expected"
         );
     }
 
@@ -210,7 +210,7 @@ contract COWFeeModuleTest is Test {
         // THEN: WETH balance is increased by ethBalance
         uint256 expectedSentWeth = ethBalance;
         dripAndAssertBalances(
-            ethBalance, wethBalance, expectedSentWeth, "drip didn't wrap Ether and transfer WETH as expected"
+            ethBalance, wethBalance, expectedSentWeth, 0, "drip didn't wrap Ether and transfer WETH as expected"
         );
     }
 
@@ -225,7 +225,7 @@ contract COWFeeModuleTest is Test {
         // THEN: WETH balance doesn't change
         uint256 expectedSentWeth = 0;
         dripAndAssertBalances(
-            ethBalance, wethBalance, expectedSentWeth, "drip modified WETH balance when no transfer was expected"
+            ethBalance, wethBalance, expectedSentWeth, 0, "drip modified WETH balance when no transfer was expected"
         );
     }
 
@@ -233,14 +233,14 @@ contract COWFeeModuleTest is Test {
         // GIVEN: Ether balance is 0
         uint256 ethBalance = minOut - 1;
 
-        // GIVEN: WETH balance is minOut
+        // GIVEN: WETH balance is minOut - 1
         uint256 wethBalance = minOut - 1;
 
         // WHEN: drip is called
         // THEN: WETH balance doesn't change
         uint256 expectedSentWeth = 0;
         dripAndAssertBalances(
-            ethBalance, wethBalance, expectedSentWeth, "drip modified WETH balance when no transfer was expected"
+            ethBalance, wethBalance, expectedSentWeth, 0, "drip modified WETH balance when no transfer was expected"
         );
     }
 
@@ -255,14 +255,43 @@ contract COWFeeModuleTest is Test {
         // THEN: WETH balance is increased by 2 * minOut
         uint256 expectedSentWeth = 2 * minOut;
         dripAndAssertBalances(
-            ethBalance, wethBalance, expectedSentWeth, "drip modified WETH balance by wrong amount (expected 2x minOut)"
+            ethBalance, wethBalance, expectedSentWeth, 0, "drip modified WETH balance by wrong amount (expected 2x minOut)"
         );
+    }
+
+    function testDripWethLeaveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: Ether balance is 0, WETH balance is minOut + leaveDust
+        uint256 ethBalance = 0;
+        uint256 wethBalance = minOut + leaveDust;
+
+        // WHEN: drip is called with leaveDust
+        // THEN: receiver gets wethBalance - leaveDust, settlement retains leaveDust WETH
+        uint256 expectedSentWeth = wethBalance - leaveDust;
+        dripAndAssertBalances(ethBalance, wethBalance, expectedSentWeth, leaveDust, "drip didn't leave WETH dust");
+    }
+
+    function testDripEthLeaveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: Ether balance is minOut + 2 * leaveDust, WETH balance is 0
+        // (need enough ETH so that after leaving leaveDust ETH, the wrapped amount still covers minOut + leaveDust for WETH)
+        uint256 ethBalance = minOut + 2 * leaveDust;
+        uint256 wethBalance = 0;
+
+        // nativeToWrap = ethBalance - leaveDust = minOut + leaveDust
+        // wrappedNativeBalance = minOut + leaveDust
+        // expectedSentWeth = wrappedNativeBalance - leaveDust = minOut
+        uint256 expectedSentWeth = minOut;
+        dripAndAssertBalances(ethBalance, wethBalance, expectedSentWeth, leaveDust, "drip didn't leave ETH and WETH dust");
     }
 
     function dripAndAssertBalances(
         uint256 ethBalance,
         uint256 wethBalance,
         uint256 expectedSentWeth,
+        uint256 leaveDust,
         string memory message
     ) internal {
         vm.deal(address(settlement), ethBalance);
@@ -271,36 +300,32 @@ contract COWFeeModuleTest is Test {
         address[] memory approveTokens = new address[](0);
         COWFeeModule.SwapToken[] memory swapTokens = new COWFeeModule.SwapToken[](0);
 
-        // Assert WETH balance change in receiver
-        assertWethBalanceChangeAfterDrip(expectedSentWeth, approveTokens, swapTokens, message);
+        assertWethBalanceChangeAfterDrip(expectedSentWeth, approveTokens, swapTokens, leaveDust, message);
     }
 
     function assertWethBalanceChangeAfterDrip(
         uint256 expectedSentWeth,
         address[] memory approveTokens,
         COWFeeModule.SwapToken[] memory swapTokens,
+        uint256 leaveDust,
         string memory message
     ) internal {
-        // Get balances before drip
         uint256 settlementEthBefore = address(settlement).balance;
         uint256 settlementWethBefore = IERC20(WETH).balanceOf(address(settlement));
         uint256 receiverEthBefore = address(receiver).balance;
         uint256 receiverWethBefore = IERC20(WETH).balanceOf(receiver);
 
-        // Placeholder for the function call that would trigger balance changes
         vm.prank(keeper);
-        module.drip(approveTokens, swapTokens);
+        module.drip(approveTokens, swapTokens, leaveDust);
 
-        // Get balances after drip
         uint256 settlementEthAfter = address(settlement).balance;
         uint256 settlementWethAfter = IERC20(WETH).balanceOf(address(settlement));
         uint256 receiverEthAfter = address(receiver).balance;
         uint256 receiverWethAfter = IERC20(WETH).balanceOf(receiver);
 
-        // Assert receiver's WETH balance increased by the expected amount
         assertEq(receiverWethAfter - receiverWethBefore, expectedSentWeth, message);
 
-        // Verify conservation of ETH/WETh
+        // Verify conservation of ETH/WETH across settlement and receiver
         assertEq(
             settlementEthBefore + settlementWethBefore + receiverEthBefore + receiverWethBefore,
             settlementEthAfter + settlementWethAfter + receiverEthAfter + receiverWethAfter,

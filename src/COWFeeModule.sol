@@ -89,20 +89,21 @@ contract COWFeeModule {
 
     /// @notice Commit presignatures for sell orders of given tokens of given amounts.
     ///         Optionally, also approve the tokens to be spent to the vault relayer.
-    function drip(address[] calldata _approveTokens, SwapToken[] calldata _swapTokens) external onlyKeeper {
+    function drip(address[] calldata _approveTokens, SwapToken[] calldata _swapTokens, uint256 _leaveDust) external onlyKeeper {
         // Get native token balance.
         // We wrap the native token, as long as its above the minOut (requires an additional interaction)
         uint256 nativeBalance = address(settlement).balance;
-        bool hasToWrapNativeToken = nativeBalance >= minOut;
+        uint256 nativeToWrap = nativeBalance > _leaveDust ? nativeBalance - _leaveDust : 0;
+        bool hasToWrapNativeToken = nativeToWrap >= minOut;
 
         // Wrapped native token is handled differently because it's the buyToken, we just do a normal transfer (requires an additional interaction)
         // We account for the native balance (only if we wrap it)
         IWrappedNativeToken wrappedNativeTokenContract = IWrappedNativeToken(wrappedNativeToken);
         uint256 wrappedNativeBalance =
-            (hasToWrapNativeToken ? nativeBalance : 0) + wrappedNativeTokenContract.balanceOf(address(settlement));
+            (hasToWrapNativeToken ? nativeToWrap : 0) + wrappedNativeTokenContract.balanceOf(address(settlement));
 
         // Determine if we need a wrappedNativeToken transfer interaction
-        bool hasToTransferWrappedNativeToken = wrappedNativeBalance >= minOut;
+        bool hasToTransferWrappedNativeToken = wrappedNativeBalance > _leaveDust && wrappedNativeBalance - _leaveDust >= minOut;
         uint256 len = _approveTokens.length + _swapTokens.length
             + (hasToWrapNativeToken ? 2 : (hasToTransferWrappedNativeToken ? 1 : 0));
 
@@ -158,7 +159,7 @@ contract COWFeeModule {
             approveAndDripInteractions[len - 1] = IGPv2Settlement.InteractionData({
                 to: wrappedNativeToken,
                 value: 0,
-                callData: abi.encodeCall(IERC20.transfer, (receiver, wrappedNativeBalance))
+                callData: abi.encodeCall(IERC20.transfer, (receiver, wrappedNativeBalance - _leaveDust))
             });
         }
 

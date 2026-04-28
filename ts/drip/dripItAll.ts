@@ -51,6 +51,7 @@ export async function dripItAll(
       signer,
       toApprove: [],
       toDrip: [],
+      leaveDust: config.leaveDust,
       maxFeePerGas: config.maxFeePerGas,
       maxPriorityFeePerGas: config.maxPriorityFeePerGas,
       confirmDrip: config.confirmDrip,
