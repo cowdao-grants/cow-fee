@@ -72,6 +72,14 @@ export async function readConfig(): Promise<
         "-c, --confirm-drip",
         "Ask for confirmation before dripping"
       ).default(false)
+    )
+    .addOption(
+      new Option(
+        "--leave-dust <wei>",
+        "Amount of each token (in wei) to leave in the contract after swapping"
+      )
+        .default(BigNumber.from(10))
+        .argParser((x) => BigNumber.from(x))
     );
 
   program.parse();
@@ -88,6 +96,7 @@ export async function readConfig(): Promise<
     lookbackRange,
     tokenListStrategy,
     confirmDrip,
+    leaveDust,
   } = options;
   const network = selectedNetwork || "mainnet";
 
@@ -147,6 +156,7 @@ export async function readConfig(): Promise<
       lookbackRange,
       targetSafe,
       confirmDrip,
+      leaveDust,
     },
     provider,
   ];
