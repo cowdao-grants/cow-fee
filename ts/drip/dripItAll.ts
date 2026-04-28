@@ -25,7 +25,7 @@ export async function dripItAll(
     tokensToSwap.map((token) => ({
       symbol: token.symbol,
       address: token.address,
-      balance: formatUnits(token.balance, token.decimals),
+      balance: formatUnits(token.adjustedBalance, token.decimals),
       buyAmount: formatUnits(token.buyAmount, WETH_DECIMALS),
       needsApproval: token.needsApproval,
     }))
@@ -51,6 +51,7 @@ export async function dripItAll(
       signer,
       toApprove: [],
       toDrip: [],
+      leaveDust: config.leaveDust,
       maxFeePerGas: config.maxFeePerGas,
       maxPriorityFeePerGas: config.maxPriorityFeePerGas,
       confirmDrip: config.confirmDrip,

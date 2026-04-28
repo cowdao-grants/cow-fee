@@ -12,7 +12,7 @@ import { getAllowances } from "./getAllowances";
 
 export interface GetTokensToSwapResult {
   buyAmount: BigNumber;
-  balance: BigNumber;
+  adjustedBalance: BigNumber;
   allowance: BigNumber;
   needsApproval: boolean;
   address: string;
@@ -45,7 +45,7 @@ export async function getTokensToSwap(
   // minValue filter again with _real_ balance
   const unfilteredWithBalanceAndAllowance = unfiltered.map((token, idx) => ({
     ...token,
-    balance: balances[idx],
+    adjustedBalance: balances[idx].sub(config.leaveDust),
     allowance: allowances[idx],
     needsApproval: allowances[idx].lt(balances[idx]),
   }));
@@ -56,7 +56,7 @@ export async function getTokensToSwap(
     unfilteredWithBalanceAndAllowance.map((token) =>
       orderBookApi.getQuote({
         sellToken: token.address,
-        sellAmountBeforeFee: token.balance.toString(),
+        sellAmountBeforeFee: token.adjustedBalance.toString(),
         kind: OrderQuoteSideKindSell.SELL,
         buyToken: config.wrappedNativeToken,
         from: config.gpv2Settlement,
