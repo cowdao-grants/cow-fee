@@ -287,6 +287,51 @@ contract COWFeeModuleTest is Test {
         dripAndAssertBalances(ethBalance, wethBalance, expectedSentWeth, leaveDust, "drip didn't leave ETH and WETH dust");
     }
 
+    function testDripWethExactlyLeaveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: WETH balance equals leaveDust exactly
+        // WHEN: drip is called
+        // THEN: nothing is transferred — guard (wrappedNativeBalance > leaveDust) is false
+        dripAndAssertBalances(0, leaveDust, 0, leaveDust, "drip should not transfer when weth == leaveDust");
+    }
+
+    function testDripWethBelowLeaveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: WETH balance is below leaveDust
+        // WHEN: drip is called
+        // THEN: nothing is transferred — guard prevents underflow
+        dripAndAssertBalances(0, leaveDust - 1, 0, leaveDust, "drip should not transfer when weth < leaveDust");
+    }
+
+    function testDripEthExactlyLeaveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: ETH balance equals leaveDust, no WETH
+        // WHEN: drip is called
+        // THEN: nativeToWrap == 0 so nothing wraps or transfers
+        dripAndAssertBalances(leaveDust, 0, 0, leaveDust, "drip should not wrap when eth == leaveDust");
+    }
+
+    function testDripEthBelowLeaveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: ETH balance is below leaveDust, no WETH
+        // WHEN: drip is called
+        // THEN: ternary clamps nativeToWrap to 0, nothing wraps or transfers
+        dripAndAssertBalances(leaveDust - 1, 0, 0, leaveDust, "drip should not wrap when eth < leaveDust");
+    }
+
+    function testDripWethNotEnoughAboveDust() external {
+        uint256 leaveDust = 100;
+
+        // GIVEN: WETH balance is leaveDust + minOut - 1 (above dust but transfer amount would be minOut - 1)
+        // WHEN: drip is called
+        // THEN: nothing is transferred — wrappedNativeBalance - leaveDust < minOut
+        dripAndAssertBalances(0, leaveDust + minOut - 1, 0, leaveDust, "drip should not transfer when amount above dust is below minOut");
+    }
+
     function dripAndAssertBalances(
         uint256 ethBalance,
         uint256 wethBalance,
