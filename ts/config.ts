@@ -104,4 +104,5 @@ export interface IConfig {
   tokenListStrategy: "explorer" | "chain";
   lookbackRange: number;
   confirmDrip: boolean;
+  leaveDust: BigNumber;
 }
