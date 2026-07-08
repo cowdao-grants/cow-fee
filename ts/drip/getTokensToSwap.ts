@@ -32,7 +32,12 @@ export async function getTokensToSwap(
   );
 
   // populate the balances and allowances
-  const tokenAddresses = unfiltered.map((token) => token.address);
+  const tokenAddresses = unfiltered
+    .filter(
+      (token) => token.address.toLowerCase() !== config.wrappedNativeToken.toLowerCase()
+    )
+    .map((token) => token.address);
+
   const [balances, allowances] = await Promise.all([
     getBalances(provider, config.gpv2Settlement, tokenAddresses),
     getAllowances(
