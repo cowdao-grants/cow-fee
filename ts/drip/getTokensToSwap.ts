@@ -31,7 +31,7 @@ export async function getTokensToSwap(
     config
   );
 
-  // populate the balances and allowances
+  // populate the balances and allowances - exclude native token
   const tokenAddresses = unfiltered
     .filter(
       (token) => token.address.toLowerCase() !== config.wrappedNativeToken.toLowerCase()
