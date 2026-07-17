@@ -50,7 +50,7 @@ export const swapTokens = async (
 
   const toDrip = toActuallySwap.map((token) => ({
     token: token.address,
-    sellAmount: token.balance,
+    sellAmount: token.adjustedBalance,
     buyAmount: token.buyAmount,
   }));
 
@@ -60,6 +60,7 @@ export const swapTokens = async (
     signer: signerWithProvider,
     toApprove,
     toDrip,
+    leaveDust: config.leaveDust,
     confirmDrip: config.confirmDrip,
     maxFeePerGas: config.maxFeePerGas,
     maxPriorityFeePerGas: config.maxPriorityFeePerGas,
