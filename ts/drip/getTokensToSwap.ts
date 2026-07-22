@@ -31,12 +31,13 @@ export async function getTokensToSwap(
     config
   );
 
-  // populate the balances and allowances - exclude native token
-  const tokenAddresses = unfiltered
-    .filter(
-      (token) => token.address.toLowerCase() !== config.wrappedNativeToken.toLowerCase()
-    )
-    .map((token) => token.address);
+  // exclude wrapped native token
+  const filtered = unfiltered.filter(
+    (token) => token.address.toLowerCase() !== config.wrappedNativeToken.toLowerCase()
+  );
+
+  // populate the balances and allowances
+  const tokenAddresses = filtered.map((token) => token.address);
 
   const [balances, allowances] = await Promise.all([
     getBalances(provider, config.gpv2Settlement, tokenAddresses),
@@ -48,7 +49,7 @@ export async function getTokensToSwap(
     ),
   ]);
   // minValue filter again with _real_ balance
-  const unfilteredWithBalanceAndAllowance = unfiltered.map((token, idx) => ({
+  const filteredWithBalanceAndAllowance = filtered.map((token, idx) => ({
     ...token,
     balance: balances[idx],
     allowance: allowances[idx],
@@ -58,7 +59,7 @@ export async function getTokensToSwap(
   // filter shitcoins with no liquidity by using the quotes api
   const orderBookApi = getOrderbookApi(config.chainId);
   const quotes = await Promise.allSettled(
-    unfilteredWithBalanceAndAllowance.map((token) =>
+    filteredWithBalanceAndAllowance.map((token) =>
       orderBookApi.getQuote({
         sellToken: token.address,
         sellAmountBeforeFee: token.balance.toString(),
@@ -70,9 +71,9 @@ export async function getTokensToSwap(
   );
   console.log(
     "Total tokens pre-filter:",
-    unfilteredWithBalanceAndAllowance.length
+    filteredWithBalanceAndAllowance.length
   );
-  const quotesFiltered = unfilteredWithBalanceAndAllowance
+  const quotesFiltered = filteredWithBalanceAndAllowance
     .map((token, i) => ({
       ...token,
       buyAmount: BigNumber.from(
