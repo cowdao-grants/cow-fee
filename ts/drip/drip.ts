@@ -11,6 +11,7 @@ export interface DripParams {
   signer: ethers.Signer;
   toApprove: string[];
   toDrip: { token: string; sellAmount: BigNumber; buyAmount: BigNumber }[];
+  leaveDust: BigNumber;
   confirmDrip: boolean;
   maxFeePerGas?: BigNumber;
   maxPriorityFeePerGas?: BigNumber;
@@ -50,6 +51,7 @@ async function getDripTx(params: DripParams): Promise<TransactionRequest> {
     signer: signerWithProvider,
     toApprove,
     toDrip,
+    leaveDust,
   } = params;
 
   // On Gnosis chain we ran into an error where ethers would choose a nonce that was way too high
@@ -70,6 +72,7 @@ async function getDripTx(params: DripParams): Promise<TransactionRequest> {
     data: moduleContract.interface.encodeFunctionData("drip", [
       toApprove,
       toDrip,
+      leaveDust,
     ]),
     value: BigNumber.from(0),
     nonce,
