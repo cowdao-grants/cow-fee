@@ -22,7 +22,7 @@ export async function postOrders(
       orderBookApi.sendOrder({
         sellToken: token.address,
         buyToken: config.wrappedNativeToken,
-        sellAmount: token.balance.toString(),
+        sellAmount: token.adjustedBalance.toString(),
         buyAmount: token.buyAmount.toString(),
         validTo: nextValidTo,
         appData: appDataContent,

@@ -25,7 +25,7 @@ export async function dripItAll(
     tokensToSwap.map((token) => ({
       symbol: token.symbol,
       address: token.address,
-      balance: formatUnits(token.balance, token.decimals),
+      balance: formatUnits(token.adjustedBalance, token.decimals),
       buyAmount: formatUnits(token.buyAmount, WETH_DECIMALS),
       needsApproval: token.needsApproval,
     }))
