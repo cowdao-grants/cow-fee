@@ -21,7 +21,7 @@ export async function readConfig(): Promise<
   const program = new Command()
     .name("cow-fee")
     .addOption(new Option("--network <network>").choices(SUPPORTED_NETWORKS))
-    .addOption(new Option("--rpc-url <rpc-url>"))
+    .addOption(new Option("--rpc-url <rpc-url>").env("RPC_URL"))
     .addOption(new Option(
         "--max-fee-per-gas <gwei>",
         "Override maxFeePerGas transaction parameter. Units specified in GWEI"
